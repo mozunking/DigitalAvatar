@@ -124,3 +124,79 @@ Do not invent commands from the proposal alone.
 - Keep policy/audit enforcement embedded at critical entry points, as specified in the proposal.
 - Keep memory persistence confirmation-based; candidate memories should not be written directly as durable long-term memory by default.
 - Treat plugin/module execution as whitelist-first with explicit permission declarations.
+
+## Frontend Architecture Review (V12)
+
+A comprehensive frontend architecture review has been completed. Key findings and guidance:
+
+### Technology Stack Assessment
+- **Vue 3 + Vite + TypeScript (strict)**: Recommended, solid choice
+- **Element Plus**: Good for enterprise use, but configure tree-shaking for bundle optimization
+- **Missing**: Pinia (state management), Vue Router 4 (routing), Axios/ky (HTTP client)
+
+### Recommended Frontend Stack
+```json
+{
+  "framework": "Vue 3 + Composition API",
+  "build": "Vite",
+  "language": "TypeScript (strict)",
+  "state": "Pinia",
+  "routing": "Vue Router 4",
+  "http": "Axios",
+  "ui": "Element Plus (with tree-shaking)",
+  "testing": "Vitest + Playwright"
+}
+```
+
+### Frontend Directory Structure (Recommended)
+```
+apps/web/src/
+├── api/           # API layer: HTTP requests
+├── types/         # Type definitions (consider OpenAPI auto-generation)
+├── stores/        # Pinia stores (domain-oriented)
+├── composables/   # Reusable composition functions
+├── components/    # Components (common/ + domain/)
+├── views/         # Page components
+├── router/        # Vue Router config
+└── utils/         # Pure utility functions
+```
+
+### Priority Improvements
+**P0 (Must do before implementation):**
+- Define Pinia as state management solution
+- Add Login/Auth page (missing in current proposal)
+- Add Avatar List page (missing in current proposal)
+- Configure Element Plus tree-shaking via unplugin-vue-components
+
+**P1 (Should do for MVP quality):**
+- API type auto-generation mechanism (OpenAPI)
+- Task execution page with SSE real-time status
+- Global error handling and loading states
+- CSRF/XSS security configuration
+
+**P2 (Nice to have for Beta):**
+- Responsive design refinement
+- Accessibility improvements (WCAG AA)
+- Performance monitoring
+
+### MVP Pages (Updated)
+Based on review, recommend these pages for MVP:
+1. Login/Auth page
+2. Home/Dashboard
+3. Avatar List page
+4. Avatar Create page
+5. Persona Generate page
+6. Agent Management page
+7. Task Execution page
+8. Pending Memory Confirm page
+9. Memory Search page
+10. Audit Log page
+11. Settings page
+12. 404/Error page
+
+### Key Frontend Decisions to Make
+1. **State Management**: Use Pinia (Vue 3 official), NOT Vuex
+2. **API Types**: Generate from OpenAPI spec, not manual maintenance
+3. **Error Handling**: Global Axios interceptor + error boundary components
+4. **Request Cancellation**: Use AbortController for tab switching scenarios
+5. **Real-time Updates**: Consider SSE for task status (vs polling)
