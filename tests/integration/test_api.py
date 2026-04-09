@@ -270,3 +270,92 @@ def test_avatar_detail_endpoint() -> None:
     updated = client.put(f"/api/v1/avatars/{avatar_id}", headers=headers, json={"name": "Updated", "goal": "new goal", "visibility": "team"})
     assert updated.status_code == 200
     assert updated.json()["name"] == "Updated"
+
+
+def test_audit_logs_are_scoped_to_current_user() -> None:
+    first_headers = auth_headers()
+    first_avatar = client.post(
+        "/api/v1/avatars",
+        headers=first_headers,
+        json={"name": "User One Avatar", "goal": "private scope", "visibility": "private"},
+    )
+    assert first_avatar.status_code == 201
+    first_avatar_id = first_avatar.json()["id"]
+
+    first_agent = client.post(
+        f"/api/v1/avatars/{first_avatar_id}/agents",
+        headers=first_headers,
+        json={"name": "Scoped Agent", "role_prompt": "test", "permissions": ["task:run"]},
+    )
+    assert first_agent.status_code == 201
+
+    register = client.post(
+        "/api/v1/auth/register",
+        json={"email": "second@example.com", "password": "secret123", "display_name": "Second User"},
+    )
+    assert register.status_code == 201
+    second_headers = {"Authorization": f"Bearer {register.json()['access_token']}"}
+
+    list_response = client.get("/api/v1/audit", headers=second_headers)
+    assert list_response.status_code == 200
+    assert all(item["resource_id"] != first_avatar_id for item in list_response.json()["items"])
+
+    resource_response = client.get("/api/v1/audit", params={"resource_type": "avatar"}, headers=second_headers)
+    assert resource_response.status_code == 200
+    assert resource_response.json()["total"] == 0
+
+
+def test_privacy_export_and_delete_cover_related_entities_and_audit() -> None:
+    headers = auth_headers()
+
+    avatar = client.post(
+        "/api/v1/avatars",
+        headers=headers,
+        json={"name": "Privacy Avatar", "goal": "cleanup", "visibility": "private"},
+    )
+    assert avatar.status_code == 201
+    avatar_id = avatar.json()["id"]
+
+    persona = client.post(
+        f"/api/v1/avatars/{avatar_id}/persona/generate",
+        headers=headers,
+        json={"samples": ["I prefer concise updates.", "Keep evidence attached."]},
+    )
+    assert persona.status_code == 201
+
+    agent = client.post(
+        f"/api/v1/avatars/{avatar_id}/agents",
+        headers=headers,
+        json={"name": "Privacy Agent", "role_prompt": "Be safe.", "permissions": ["task:run"]},
+    )
+    assert agent.status_code == 201
+    agent_id = agent.json()["id"]
+
+    task = client.post(
+        "/api/v1/tasks",
+        headers=headers,
+        json={"avatar_id": avatar_id, "agent_id": agent_id, "input": "Summarize my style."},
+    )
+    assert task.status_code == 201
+    task_payload = wait_for_task_terminal(task.json()["task_id"], headers)
+    assert task_payload["status"] == "succeeded"
+
+    pending = client.get(f"/api/v1/avatars/{avatar_id}/memories/pending", headers=headers)
+    assert pending.status_code == 200
+    memory_id = pending.json()["items"][0]["id"]
+
+    export_before = client.get("/api/v1/privacy/export", headers=headers)
+    assert export_before.status_code == 200
+    export_payload = export_before.json()
+    assert any(item["id"] == avatar_id for item in export_payload["avatars"])
+    assert any(item["avatar_id"] == avatar_id for item in export_payload["personas"])
+    assert any(item["avatar_id"] == avatar_id for item in export_payload["agents"])
+    assert any(item["id"] == memory_id for item in export_payload["memories"])
+    assert any(item["resource_id"] == memory_id for item in export_payload["audit_logs"])
+
+    delete_response = client.delete("/api/v1/privacy/delete", headers=headers)
+    assert delete_response.status_code == 200
+    assert delete_response.json()["status"] == "deleted"
+
+    login_again = client.post("/api/v1/auth/login", json={"email": "demo@example.com", "password": "demo123456"})
+    assert login_again.status_code == 401

@@ -2,13 +2,36 @@ import json
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user, get_db
-from app.models.models import AuditLog, User
+from app.models.models import Agent, AuditLog, Avatar, Memory, Persona, Task, User
 from app.schemas.common import AuditLogResponse, PaginatedResponse
 
 router = APIRouter()
+
+
+def _owned_audit_filter(db: Session, current_user: User):
+    avatar_ids = [item[0] for item in db.query(Avatar.id).filter(Avatar.user_id == current_user.id).all()]
+    persona_ids = [item[0] for item in db.query(Persona.id).filter(Persona.avatar_id.in_(avatar_ids)).all()] if avatar_ids else []
+    agent_ids = [item[0] for item in db.query(Agent.id).filter(Agent.avatar_id.in_(avatar_ids)).all()] if avatar_ids else []
+    task_ids = [item[0] for item in db.query(Task.id).filter(Task.avatar_id.in_(avatar_ids)).all()] if avatar_ids else []
+    memory_ids = [item[0] for item in db.query(Memory.id).filter(Memory.avatar_id.in_(avatar_ids)).all()] if avatar_ids else []
+
+    filters = [AuditLog.actor == current_user.email]
+    if avatar_ids:
+        filters.append((AuditLog.resource_type == "avatar") & (AuditLog.resource_id.in_(avatar_ids)))
+    if persona_ids:
+        filters.append((AuditLog.resource_type == "persona") & (AuditLog.resource_id.in_(persona_ids)))
+    if agent_ids:
+        filters.append((AuditLog.resource_type == "agent") & (AuditLog.resource_id.in_(agent_ids)))
+    if task_ids:
+        filters.append((AuditLog.resource_type == "task") & (AuditLog.resource_id.in_(task_ids)))
+    if memory_ids:
+        filters.append((AuditLog.resource_type == "memory") & (AuditLog.resource_id.in_(memory_ids)))
+
+    return or_(*filters)
 
 
 @router.get("", response_model=PaginatedResponse)
@@ -22,7 +45,7 @@ def list_audit_logs(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> PaginatedResponse:
-    query = db.query(AuditLog)
+    query = db.query(AuditLog).filter(_owned_audit_filter(db, current_user))
     if trace_id:
         query = query.filter(AuditLog.trace_id == trace_id)
     if resource_type:
@@ -47,7 +70,7 @@ def get_audit_log(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> AuditLogResponse:
-    item = db.get(AuditLog, audit_id)
+    item = db.query(AuditLog).filter(AuditLog.id == audit_id, _owned_audit_filter(db, current_user)).first()
     if not item:
         raise HTTPException(status_code=404, detail="Audit log not found")
     return AuditLogResponse.model_validate(item)

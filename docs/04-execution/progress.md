@@ -28,6 +28,7 @@
 - [x] Provider 选模逻辑已修复：live 模式不再误选 embedding-only Ollama tag，默认模型切换为 `qwen3.5:7b-instruct-q4_0`
 - [x] Provider 运行态可观测性已补强：`/health` 暴露 provider mode/status/model/version/chat_model_available/message，`/metrics` 同步暴露 provider 诊断字段，smoke/integration 断言保持一致
 - [x] Provider 退化态诊断已补强：仅 embedding 模型或连接失败时返回可读 message，便于定位 live 环境问题
+- [x] Audit 多租户隔离与隐私数据闭环已补强：审计列表/详情仅返回当前用户拥有资源，隐私导出覆盖 persona/agent/task/memory/audit，隐私删除同步清理关联审计记录
 - [ ] Provider live 模式验收仍需本机 Ollama 升级并补最终证据
 
 ## 当前阶段
@@ -40,9 +41,9 @@ MVP 功能基本完备，核心闭环 + 主要辅助功能已全部落地。
 |---|---:|---|
 | 根目录协作与治理文档 | 100% | 已完成并与当前仓库状态对齐 |
 | 产品/架构/交付/评审文档体系 | 100% | 已补齐 Growth Report 亮点能力与验收约束 |
-| 后端主链路与审计/记忆能力 | 100% | 登录→Avatar→Persona→Agent→Task→Memory→Audit 已验证 |
+| 后端主链路与审计/记忆能力 | 100% | 登录→Avatar→Persona→Agent→Task→Memory→Audit 已验证，且新增审计多租户隔离与隐私导出/删除闭环测试 |
 | 前端主链路与类型同步 | 100% | Web 测试与 build 已通过，OpenAPI 同步已加固 |
-| 仓库卫生与 GitHub 发布准备 | 90% | `.gitignore` 与命令可移植性已修复，待完成最终 commit/push 验证 |
+| 仓库卫生与 GitHub 发布准备 | 95% | `.gitignore`、命令可移植性与敏感数据排除已修复，待配置 remote 并完成 push 验证 |
 | Provider 可观测性与降级诊断 | 95% | 代码与测试已补齐，live 最终环境证据待补 |
 | Live Provider 最终验收 | 60% | 受本机 Ollama 0.1.28 + 无 chat 模型阻塞 |
 | Docker Compose 实机联调 | 35% | 配置和文档已在位，按范围延后实机验证 |
@@ -50,6 +51,7 @@ MVP 功能基本完备，核心闭环 + 主要辅助功能已全部落地。
 ### 最新验证
 
 - 后端 focused tests 已通过：`17 passed`（provider unit + integration + smoke）
+- 新增隐私/审计专项集成测试已通过：`10 passed, 1 warning`，覆盖审计日志按当前用户隔离、隐私导出包含 persona/agent/task/memory/audit、隐私删除同步清理关联审计记录
 - 已新增 `.gitignore`，排除 `.venv/`、`data/*.db`、`apps/web/node_modules/`、`apps/web/dist/`、`apps/api/build/`、Claude 本地状态等，避免上传 GitHub 时带入个人或运行时文件
 - README 中本机绝对路径已移除，改为可移植命令
 - 当前剩余主阻塞为外部环境：本机 Ollama `0.1.28` 仅有 `bge-m3:latest`，尚无可聊天 Qwen3.5 模型
