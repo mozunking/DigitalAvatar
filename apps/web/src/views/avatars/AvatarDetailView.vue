@@ -52,6 +52,8 @@
             :tasks="workspace.tasks"
             :pending-memories="workspace.memories"
             :confirmed-memories="workspace.confirmedMemories"
+            :loading="workspace.loading"
+            :failed="Boolean(workspace.workspaceError)"
           />
 
           <!-- Related Stats -->

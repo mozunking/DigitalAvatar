@@ -16,6 +16,16 @@
       </el-empty>
     </template>
 
+    <template v-else-if="reportState === 'failed'">
+      <el-alert
+        :title="t('growthReport.failedTitle')"
+        :description="t('growthReport.failedDescription')"
+        type="error"
+        :closable="false"
+        show-icon
+      />
+    </template>
+
     <template v-else>
       <div class="snapshot-grid">
         <div class="snapshot-item">
@@ -105,13 +115,16 @@ const props = defineProps<{
   tasks: TaskResponse[]
   pendingMemories: MemoryResponse[]
   confirmedMemories: MemoryResponse[]
+  loading?: boolean
+  failed?: boolean
 }>()
 
 const { t } = useI18n()
 
 const currentPersona = computed(() => props.personas.find((item) => item.is_current) || props.personas[0] || null)
 
-const reportState = computed<'empty' | 'building' | 'ready' | 'demo'>(() => {
+const reportState = computed<'empty' | 'building' | 'ready' | 'demo' | 'failed'>(() => {
+  if (props.failed) return 'failed'
   const normalizedName = (props.avatarName || '').trim().toLowerCase()
   if (normalizedName === 'demo avatar') return 'demo'
   if (props.confirmedMemories.length > 0) return 'ready'
@@ -120,6 +133,7 @@ const reportState = computed<'empty' | 'building' | 'ready' | 'demo'>(() => {
 })
 
 const statusLabel = computed(() => {
+  if (reportState.value === 'failed') return t('growthReport.failedState')
   if (reportState.value === 'demo') return t('growthReport.demoState')
   if (reportState.value === 'ready') return t('growthReport.readyState')
   if (reportState.value === 'building') return t('growthReport.buildingState')
@@ -127,6 +141,7 @@ const statusLabel = computed(() => {
 })
 
 const statusTagType = computed(() => {
+  if (reportState.value === 'failed') return 'danger'
   if (reportState.value === 'demo') return 'warning'
   if (reportState.value === 'ready') return 'success'
   if (reportState.value === 'building') return 'info'
@@ -183,6 +198,9 @@ const nextActions = computed(() => {
 })
 
 const traceabilityDescription = computed(() => {
+  if (reportState.value === 'failed') {
+    return t('growthReport.failedTraceability')
+  }
   if (props.confirmedMemories.length === 0) {
     return t('growthReport.traceabilityEmpty')
   }

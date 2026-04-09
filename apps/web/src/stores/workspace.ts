@@ -11,11 +11,13 @@ export const useWorkspaceStore = defineStore('workspace', {
     memories: [] as MemoryResponse[],
     confirmedMemories: [] as MemoryResponse[],
     auditLogs: [] as AuditLogResponse[],
-    loading: false
+    loading: false,
+    workspaceError: ''
   }),
   actions: {
     async loadAvatarWorkspace(avatarId: string) {
       this.loading = true
+      this.workspaceError = ''
       try {
         const [personas, agents, tasks, confirmedMemories] = await Promise.all([
           personaApi.list(avatarId),
@@ -27,6 +29,12 @@ export const useWorkspaceStore = defineStore('workspace', {
         this.agents = agents.data.items
         this.tasks = tasks.data.items
         this.confirmedMemories = confirmedMemories.data.items
+      } catch {
+        this.personas = []
+        this.agents = []
+        this.tasks = []
+        this.confirmedMemories = []
+        this.workspaceError = 'workspace_load_failed'
       } finally {
         this.loading = false
       }
@@ -68,15 +76,25 @@ export const useWorkspaceStore = defineStore('workspace', {
       const avatarStore = useAvatarStore()
       const avatarId = avatarStore.currentAvatarId
       if (!avatarId) return
-      const { data } = await memoryApi.pending(avatarId)
-      this.memories = data.items
+      try {
+        const { data } = await memoryApi.pending(avatarId)
+        this.memories = data.items
+      } catch {
+        this.memories = []
+        this.workspaceError = 'workspace_load_failed'
+      }
     },
     async loadConfirmedMemories(avatarId?: string) {
       const avatarStore = useAvatarStore()
       const resolvedAvatarId = avatarId || avatarStore.currentAvatarId
       if (!resolvedAvatarId) return
-      const { data } = await memoryApi.list('confirmed', resolvedAvatarId)
-      this.confirmedMemories = data.items
+      try {
+        const { data } = await memoryApi.list('confirmed', resolvedAvatarId)
+        this.confirmedMemories = data.items
+      } catch {
+        this.confirmedMemories = []
+        this.workspaceError = 'workspace_load_failed'
+      }
     },
     async searchMemories(avatarId: string, query?: string, type?: string) {
       const { data } = await memoryApi.search(avatarId, query, type)

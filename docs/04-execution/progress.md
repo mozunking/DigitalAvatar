@@ -30,6 +30,7 @@
 - [x] Provider 退化态诊断已补强：仅 embedding 模型或连接失败时返回可读 message，便于定位 live 环境问题
 - [x] Audit 多租户隔离与隐私数据闭环已补强：审计列表/详情仅返回当前用户拥有资源，隐私导出覆盖 persona/agent/task/memory/audit，隐私删除同步清理关联审计记录
 - [x] Avatar Growth Report 前端体验已落地：Dashboard / Avatar 详情页展示成长快照、已确认洞察、下一步推荐动作与证据口径，且只基于 confirmed memory 输出“已学会”结论
+- [x] Avatar Growth Report 失败态与前端直测已补齐：工作区聚合失败时显式进入 failed 状态，不再在数据缺失时继续输出成长结论
 - [ ] Provider live 模式验收仍需本机 Ollama 升级并补最终证据
 
 ## 当前阶段
@@ -43,7 +44,7 @@ MVP 功能基本完备，核心闭环 + 主要辅助功能已全部落地。
 | 根目录协作与治理文档 | 100% | 已完成并与当前仓库状态对齐 |
 | 产品/架构/交付/评审文档体系 | 100% | 已补齐 Growth Report 亮点能力与验收约束 |
 | 后端主链路与审计/记忆能力 | 100% | 登录→Avatar→Persona→Agent→Task→Memory→Audit 已验证，且新增审计多租户隔离与隐私导出/删除闭环测试 |
-| 前端主链路与类型同步 | 100% | Web 测试与 build 已通过，OpenAPI 同步已加固，Dashboard / Avatar 详情已补齐 Avatar Growth Report 真实视图 |
+| 前端主链路与类型同步 | 100% | Web 测试与 build 已通过，OpenAPI 同步已加固，Dashboard / Avatar 详情已补齐 Avatar Growth Report 真实视图，并在聚合失败时显式降级到 failed 状态 |
 | 仓库卫生与 GitHub 发布准备 | 95% | `.gitignore`、命令可移植性与敏感数据排除已修复，待配置 remote 并完成 push 验证 |
 | Provider 可观测性与降级诊断 | 95% | 代码与测试已补齐，live 最终环境证据待补 |
 | Live Provider 最终验收 | 60% | 受本机 Ollama 0.1.28 + 无 chat 模型阻塞 |
@@ -56,6 +57,7 @@ MVP 功能基本完备，核心闭环 + 主要辅助功能已全部落地。
 - 已新增 `.gitignore`，排除 `.venv/`、`data/*.db`、`apps/web/node_modules/`、`apps/web/dist/`、`apps/api/build/`、Claude 本地状态等，避免上传 GitHub 时带入个人或运行时文件
 - README 中本机绝对路径已移除，改为可移植命令
 - 前端新增 Avatar Growth Report 验证通过：`npm --prefix apps/web run test -- --run` 与 `npm --prefix apps/web run build` 通过，Dashboard / Avatar 详情页均已接入成长报告组件
+- 前端新增 Growth Report 失败态验证：`workspace.spec.ts` 覆盖 confirmed memory 成功聚合与 workspace load 失败降级，保证数据缺失时不继续输出成长结论
 - 当前剩余主阻塞为外部环境：本机 Ollama `0.1.28` 仅有 `bge-m3:latest`，尚无可聊天 Qwen3.5 模型
 
 ## 主要风险

@@ -200,7 +200,10 @@ export default {
     buildingState: '构建中',
     readyState: '就绪',
     demoState: '示例',
+    failedState: '失败',
     emptyDescription: '还没有已确认的长期记忆。先执行任务并审核候选记忆，成长报告才会开始形成。',
+    failedTitle: '成长报告暂时不可用',
+    failedDescription: '当前工作区数据加载失败，因此报告会保持保守，不输出未经验证的成长结论。',
     runFirstTask: '去执行首个任务',
     confirmedMemories: '已确认记忆',
     pendingMemories: '待审核',
@@ -225,6 +228,7 @@ export default {
     actionInspectEvidence: '打开审计日志查看 trace 证据',
     open: '前往',
     traceabilityEmpty: '只有出现已确认记忆后，系统才会输出成长结论。待确认或已拒绝记忆不会计入。',
+    failedTraceability: '在工作区数据重新加载成功前，暂时无法提供可追溯性说明。',
     traceabilityDescription: '该报告只使用已确认记忆和当前工作区数据。示例证据：{evidence}。',
   },
   audit: {

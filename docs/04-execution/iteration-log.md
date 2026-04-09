@@ -21,3 +21,8 @@
 - 扩展前端工作区状态：补充 `confirmedMemories` 拉取与确认后即时回填，避免把 pending memory 误当作“已学会”。
 - 完成 Growth Report 中英文本地化，明确 empty / building / ready / demo 状态与“仅 confirmed memory 才进入成长结论”的口径。
 - 执行前端验证：`npm --prefix apps/web run test -- --run` 与 `npm --prefix apps/web run build` 通过。
+
+## Iteration 5
+- 补齐 Growth Report 失败态：工作区聚合失败时显式进入 `failed` 状态，停止输出未经验证的成长结论。
+- 扩展前端 store 降级逻辑：工作区 / pending / confirmed memory 拉取失败时清空对应数据并记录 `workspace_load_failed`，避免沿用陈旧状态。
+- 新增 `workspace.spec.ts`，覆盖 confirmed memory 成功聚合与失败降级场景，补上 Growth Report 直接测试证据。

@@ -200,7 +200,10 @@ export default {
     buildingState: 'Building',
     readyState: 'Ready',
     demoState: 'Demo',
+    failedState: 'Failed',
     emptyDescription: 'No confirmed long-term memory yet. Run a task and review candidate memories to start the report.',
+    failedTitle: 'Growth report is temporarily unavailable',
+    failedDescription: 'The workspace data could not be loaded, so the report stays conservative and withholds growth claims for now.',
     runFirstTask: 'Run first task',
     confirmedMemories: 'Confirmed memories',
     pendingMemories: 'Pending review',
@@ -225,6 +228,7 @@ export default {
     actionInspectEvidence: 'Open audit logs to inspect trace evidence',
     open: 'Open',
     traceabilityEmpty: 'Growth claims will appear only after confirmed memory exists. Pending or rejected memories are excluded.',
+    failedTraceability: 'Traceability is unavailable until workspace data loads successfully again.',
     traceabilityDescription: 'This report only uses confirmed memories and current workspace data. Example evidence: {evidence}.',
   },
   audit: {

@@ -35,6 +35,8 @@
         :tasks="workspace.tasks"
         :pending-memories="workspace.memories"
         :confirmed-memories="workspace.confirmedMemories"
+        :loading="workspace.loading"
+        :failed="Boolean(workspace.workspaceError)"
       />
 
       <!-- 快速操作 -->
