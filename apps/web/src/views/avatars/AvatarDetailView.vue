@@ -46,6 +46,14 @@
             </template>
           </el-card>
 
+          <GrowthReportCard
+            :avatar-name="avatar.name"
+            :personas="workspace.personas"
+            :tasks="workspace.tasks"
+            :pending-memories="workspace.memories"
+            :confirmed-memories="workspace.confirmedMemories"
+          />
+
           <!-- Related Stats -->
           <div class="stats-grid">
             <el-card shadow="hover" class="stat-card" @click="$router.push('/persona')">
@@ -89,6 +97,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
+import GrowthReportCard from '../../components/common/GrowthReportCard.vue'
 import { avatarApi } from '../../api'
 import type { AvatarResponse } from '../../types/generated/api'
 import { useAvatarStore } from '../../stores/avatar'
@@ -120,6 +129,7 @@ const load = async () => {
     avatar.value = data
     avatarStore.setCurrentAvatar(avatarId.value)
     await workspace.loadAvatarWorkspace(avatarId.value)
+    await workspace.loadPendingMemories()
   } catch {
     avatar.value = null
   } finally {
@@ -198,3 +208,4 @@ onMounted(load)
   max-width: 500px;
 }
 </style>
+

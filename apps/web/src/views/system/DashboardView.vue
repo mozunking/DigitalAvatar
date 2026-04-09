@@ -28,6 +28,15 @@
         <el-step title="Memory" :description="workspace.memories.length > 0 ? `${workspace.memories.length} ${t('dashboard.pendingConfirm')}` : t('dashboard.none')" />
       </el-steps>
 
+      <GrowthReportCard
+        v-if="avatarStore.currentAvatar"
+        :avatar-name="avatarStore.currentAvatar.name"
+        :personas="workspace.personas"
+        :tasks="workspace.tasks"
+        :pending-memories="workspace.memories"
+        :confirmed-memories="workspace.confirmedMemories"
+      />
+
       <!-- 快速操作 -->
       <div class="quick-actions">
         <el-card v-if="!workspace.personas.length" shadow="hover" class="action-card" @click="$router.push('/persona')">
@@ -68,6 +77,7 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import GrowthReportCard from '../../components/common/GrowthReportCard.vue'
 import { useAvatarStore } from '../../stores/avatar'
 import { useAuthStore } from '../../stores/auth'
 import { useWorkspaceStore } from '../../stores/workspace'
@@ -88,6 +98,7 @@ const progressStep = computed(() => {
 
 const onAvatarChange = () => {
   workspace.loadAvatarWorkspace(avatarStore.currentAvatarId)
+  workspace.loadPendingMemories()
 }
 
 const load = async () => {
@@ -171,3 +182,4 @@ onMounted(load)
   max-width: 400px;
 }
 </style>
+

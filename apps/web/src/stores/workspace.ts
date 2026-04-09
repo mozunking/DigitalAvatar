@@ -9,6 +9,7 @@ export const useWorkspaceStore = defineStore('workspace', {
     agents: [] as AgentResponse[],
     tasks: [] as TaskResponse[],
     memories: [] as MemoryResponse[],
+    confirmedMemories: [] as MemoryResponse[],
     auditLogs: [] as AuditLogResponse[],
     loading: false
   }),
@@ -16,14 +17,16 @@ export const useWorkspaceStore = defineStore('workspace', {
     async loadAvatarWorkspace(avatarId: string) {
       this.loading = true
       try {
-        const [personas, agents, tasks] = await Promise.all([
+        const [personas, agents, tasks, confirmedMemories] = await Promise.all([
           personaApi.list(avatarId),
           agentApi.list(avatarId),
-          taskApi.list(avatarId)
+          taskApi.list(avatarId),
+          memoryApi.list('confirmed', avatarId)
         ])
         this.personas = personas.data.items
         this.agents = agents.data.items
         this.tasks = tasks.data.items
+        this.confirmedMemories = confirmedMemories.data.items
       } finally {
         this.loading = false
       }
@@ -68,13 +71,21 @@ export const useWorkspaceStore = defineStore('workspace', {
       const { data } = await memoryApi.pending(avatarId)
       this.memories = data.items
     },
+    async loadConfirmedMemories(avatarId?: string) {
+      const avatarStore = useAvatarStore()
+      const resolvedAvatarId = avatarId || avatarStore.currentAvatarId
+      if (!resolvedAvatarId) return
+      const { data } = await memoryApi.list('confirmed', resolvedAvatarId)
+      this.confirmedMemories = data.items
+    },
     async searchMemories(avatarId: string, query?: string, type?: string) {
       const { data } = await memoryApi.search(avatarId, query, type)
       return data.items
     },
     async confirmMemory(memoryId: string, reason?: string) {
-      await memoryApi.confirm(memoryId, reason)
+      const { data } = await memoryApi.confirm(memoryId, reason)
       this.memories = this.memories.filter((item) => item.id !== memoryId)
+      this.confirmedMemories.unshift(data)
     },
     async rejectMemory(memoryId: string, reason?: string) {
       await memoryApi.reject(memoryId, reason)
@@ -86,3 +97,4 @@ export const useWorkspaceStore = defineStore('workspace', {
     }
   }
 })
+

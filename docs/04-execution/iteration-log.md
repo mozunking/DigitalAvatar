@@ -13,7 +13,11 @@
 - 清理 README 中本机绝对路径命令，改为仓库可移植命令。
 
 ## Iteration 3
-- 补强审计日志多租户隔离：`/api/v1/audit` 列表与详情仅返回当前用户拥有资源或本人 actor 相关记录。
-- 补强隐私数据闭环：`/api/v1/privacy/export` 新增 persona、agent、audit 导出；`/api/v1/privacy/delete` 同步清理关联 audit 记录，避免残留侧信道。
-- 增加隐私/审计集成测试，覆盖跨用户审计不可见、隐私导出完整性、隐私删除后账号不可再登录等关键场景。
-- 执行后端集成验证：`python3 -m pytest tests/integration/test_api.py` 通过（`10 passed, 1 warning`）。
+- 补强审计与隐私闭环：审计列表/详情仅返回当前用户拥有资源，隐私导出覆盖 persona / agent / task / memory / audit，隐私删除同步清理关联审计记录。
+- 新增后端集成测试验证多租户隔离与隐私数据清理闭环，避免跨用户审计泄露与残留数据。
+
+## Iteration 4
+- 新增 Avatar Growth Report 前端能力：`Dashboard` 与 `Avatar Detail` 页面均接入成长报告卡片，展示成长快照、已确认洞察、推荐动作与可信说明。
+- 扩展前端工作区状态：补充 `confirmedMemories` 拉取与确认后即时回填，避免把 pending memory 误当作“已学会”。
+- 完成 Growth Report 中英文本地化，明确 empty / building / ready / demo 状态与“仅 confirmed memory 才进入成长结论”的口径。
+- 执行前端验证：`npm --prefix apps/web run test -- --run` 与 `npm --prefix apps/web run build` 通过。
