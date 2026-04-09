@@ -1,0 +1,46 @@
+name: e2e
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'apps/api/**'
+      - 'apps/web/**'
+      - 'tests/e2e/**'
+      - 'deploy/docker/**'
+      - '.github/workflows/e2e.yml'
+
+jobs:
+  http-e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    env:
+      DATABASE_URL: sqlite:///./data/e2e.db
+      JWT_SECRET: test-secret
+      PROVIDER_MODE: mock
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install API dependencies
+        run: pip install --upgrade pip && pip install .[dev]
+      - name: Start API
+        run: uvicorn app.main:app --host 0.0.0.0 --port 8000 > /tmp/digital-avatar-api.log 2>&1 &
+      - name: Wait for API
+        run: |
+          for i in {1..20}; do
+            if curl -fsS http://localhost:8000/health; then
+              exit 0
+            fi
+            sleep 3
+          done
+          cat /tmp/digital-avatar-api.log
+          exit 1
+      - name: Run HTTP E2E tests
+        run: pytest ../../tests/e2e/test_smoke.py -v
+      - name: Show API logs on failure
+        if: failure()
+        run: cat /tmp/digital-avatar-api.log

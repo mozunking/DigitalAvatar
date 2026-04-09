@@ -4,199 +4,169 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current repository state
 
-- The repository currently contains a single project design document: `总体设计方案.md`.
-- There is no checked-in application code, package manifest, lockfile, CI config, or runnable project scaffold yet.
-- Before suggesting build, lint, or test commands, verify whether the implementation has been added; do not assume the planned stack is already present.
+- This repository now contains a verified runnable MVP implementation under `apps/api`, `apps/web`, `deploy/docker`, and `tests`.
+- Root collaboration files exist: `README.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `PRIVACY.md`, `LICENSE`, `.github/PULL_REQUEST_TEMPLATE.md`.
+- Treat the `docs/` tree as the current source of truth for product scope and frozen contracts, but verify code paths and commands against the checked-in implementation before making delivery claims.
 
-## Existing source of truth
+## Source-of-truth reading order
 
-- `总体设计方案.md` is the current authoritative project proposal for the initial architecture, MVP scope, API surface, and delivery plan.
-- Treat the document as design intent, not proof that files, modules, or commands already exist.
+When you need project context, read in this order:
 
-## Expected architecture from the proposal
+1. `README.md` — repo status, MVP loop, and top-level constraints.
+2. `docs/README.md` — canonical reading order for the split documentation system.
+3. `docs/01-product/*.md` — scope, requirements, user journeys, and functional/non-functional expectations.
+4. `docs/02-architecture/*.md` and `docs/02-architecture/adr/*.md` — system boundaries, API contract, data model, security, observability, and frozen architecture decisions.
+5. `docs/03-delivery/*.md` and `docs/05-review/*.md` — scaffold-ready delivery specs, interface freeze, testing/deployment/release plans, acceptance gates, and review rules.
+6. Historical inputs for background only: `Digital Avatar 正式方案 V14.md`, `Digital Avatar 正式方案 V13.md`, `总体设计方案.md`, `docs/minimax多智能体评审意见.md`, `docs/frontend-architecture-review.md`.
 
-The design document describes a layered digital-avatar agent system with four major layers:
+If a user asks for a change to a frozen decision, also check `docs/00-governance/decision-log.md` and the affected ADRs.
 
-1. **Application layer**: Web Console, REST API, CLI, Docker delivery.
-2. **Domain layer**: Avatar, Agent, Memory, and Policy domains.
-3. **Infrastructure layer**: LLM provider integration, DB, vector store, and audit persistence.
-4. **Runtime/extension layer**: Event bus, module loader, and task worker.
+## Commands
 
-Planned domain entities and responsibilities:
+Verified commands currently available in this repository:
 
-- **Avatar**: top-level digital persona container for a user.
-- **Persona**: generated style/profile summary derived from imported user material.
-- **Agent**: task-executing sub-agent with a role, system prompt, and permissions.
-- **Task**: execution unit run by an agent with traceable status/result.
-- **Memory**: typed memory records with confirmation workflow.
-- **Policy**: rule definitions for safety, boundary enforcement, and blocking.
-- **AuditLog**: append-only audit trail with hash-chain style integrity fields.
-- **Module**: extension unit loaded through a whitelist/module system.
+- Backend dev server: `cd apps/api && python3 -m uvicorn app.main:app --reload --port 8000`
+- Backend tests: `cd apps/api && python3 -m pytest`
+- Frontend dev server: `cd apps/web && npm run dev`
+- Frontend tests: `cd apps/web && npm run test -- --run`
+- Frontend build: `cd apps/web && npm run build`
+- Docker Compose: `cd deploy/docker && docker compose up --build`
 
-## Planned main workflow
+Before suggesting any additional command, verify it against the actual manifests in the repo (`apps/api/pyproject.toml`, `apps/web/package.json`, `deploy/docker/docker-compose.yml`, `.github/workflows/*.yml`).
 
-The MVP is centered on one end-to-end loop:
+## Big-picture architecture
 
-1. Create an avatar.
-2. Import user material / dialogue samples.
-3. Generate a Persona/Profile.
-4. Create one task agent.
-5. Execute a task with Persona + recalled Memory in context.
-6. Capture candidate memories from execution.
-7. Require user confirmation before long-term memory persistence.
-8. Record policy checks and audit logs across the flow.
+The planned system is a layered digital-avatar platform organized around domain boundaries rather than UI pages:
 
-## Planned module boundaries
+- **Application layer**: Web Console, REST API, CLI, Docker delivery
+- **Domain layer**: User, Avatar, Persona, Agent, Task, Memory, Policy, Audit
+- **Service layer**: orchestration, validation, and use-case flows
+- **Infrastructure layer**: database, model provider adapter, vector store, file/log persistence
+- **Extension layer**: events/modules/integrations; reserved for later, not part of the MVP runtime path
 
-If/when the implementation is created, align work with these boundaries from the proposal instead of organizing around UI pages:
+Key architecture rules from `docs/02-architecture/architecture.md`:
 
-- **Provider layer**: `chat`, `stream_chat`, `embed`, `health_check`, `model_info`.
-- **Agent orchestration**: task intake, context assembly, Persona injection, memory recall, model invocation, result shaping, memory capture trigger, audit writes.
-- **Memory service**: capture, pending list, confirm/reject, search, archive, delete.
-- **Policy & Audit**: inbound/outbound/task/tool validation, risk blocking, audit append.
-- **Event bus**: notifications, async audit, extension hooks; not the primary business-call path.
-- **Module loader**: whitelist registration, enable/disable, manifest permissions.
+- Controllers/routes should not contain core business logic.
+- The main business path is synchronous service orchestration; async is for long-running execution and non-critical side effects.
+- Module boundaries are domain-oriented: Auth, Avatar, Persona, Agent, Task, Memory, Policy, Audit, Provider.
+- MVP freezes interfaces and responsibilities for extension points, but does not include a real dynamic plugin runtime.
 
-## Planned storage model
+## Main product loop
 
-The proposal expects SQLite first, with a later path to PostgreSQL. Core tables described in the design doc:
+The MVP is intentionally narrow and centers on one end-to-end loop:
 
-- `users`
-- `avatars`
-- `personas`
-- `agents`
-- `tasks`
-- `memories`
-- `policies`
-- `audit_logs`
-- `modules`
+1. User logs in and creates an Avatar.
+2. User imports minimal material and generates a Persona.
+3. User creates a default Agent.
+4. User executes a Task.
+5. System captures candidate memories.
+6. User confirms or rejects those memories before long-term persistence.
+7. System records policy decisions and append-only audit data across the flow.
 
-Memory records are designed to follow this state flow:
+When evaluating scope, prefer decisions that strengthen this loop instead of expanding into adjacent features.
+
+## Core domain model
+
+The planned persistent model revolves around these entities:
+
+- `User`
+- `Avatar`
+- `Persona`
+- `Agent`
+- `Task`
+- `Memory`
+- `Policy`
+- `AuditLog`
+- `Module`
+
+Important invariants from the docs:
+
+- `Persona` is a stable profile summary; `Memory` is a discrete, searchable long-term item.
+- MVP does **not** support agent-private long-term memory; memory is Avatar-scoped.
+- `Module` is a declaration/whitelist concept in MVP, not an active plugin runtime.
+- Memory persistence is confirmation-based by default.
+
+Memory lifecycle:
 
 - `captured -> pending_confirm -> confirmed -> archived`
 - `captured -> pending_confirm -> rejected`
 
-## Planned API surface
+## Main execution flow
 
-The proposal defines a REST-first API under `/api/v1`, including:
+The core task path is:
 
-- Avatar creation and lookup
-- Persona generation and latest Persona retrieval
-- Agent creation and lookup
-- Task creation/execution and status retrieval
-- Pending memory listing, memory confirm/reject, memory search
-- Policy check and policy list
-- Audit log list/detail
-- Module list and enable/disable operations
+`Create Task -> Pre-Policy Check -> Assemble Context -> Invoke Provider -> Post-Policy Check -> Persist Result -> Capture Candidate Memories -> Append Audit Log -> Return Task Status`
 
-When implementation begins, keep route/service separation clear and avoid placing business logic directly in controllers.
+This means task orchestration code should remain the place where Persona injection, memory recall, policy checks, provider invocation, memory capture, and audit writes are coordinated.
 
-## Planned technology choices
+## API and contract expectations
 
-These are proposal-level defaults, not verified repo reality:
+The planned public API is REST-first under `/api/v1`.
 
-- **Backend**: Python 3.11+, FastAPI, Pydantic, SQLAlchemy
-- **Frontend**: Vue 3, Vite, TypeScript, Element Plus
-- **Storage**: SQLite plus a vector store such as Chroma / FAISS / sqlite-vec
-- **Model runtime**: Ollama first for MVP; Anthropic/OpenAI later in Beta
-- **Testing**: Pytest, Vitest, Playwright
-- **Delivery**: Docker
+Key contract decisions already frozen in docs:
 
-## Commands
+- Unified error shape with `error.code`, `message`, `trace_id`, and `details`
+- Async semantics for task execution: task creation returns a task shell, then callers poll/read task state
+- Default pagination for list endpoints
+- `trace_id` is part of critical write and audit flows
+- Memory search should not return full sensitive content by default
 
-There are currently no verified build, lint, or test commands in the repository because no runnable project scaffold is checked in yet.
+If implementation work begins, keep controller/route layers thin and place business logic in service/domain layers.
 
-Once implementation exists, future Claude instances should inspect the real manifests/config files before adding commands here, especially:
+## Planned implementation shape
 
-- `package.json`
-- `pyproject.toml`
-- `requirements*.txt`
-- `docker-compose.yml`
-- `Makefile`
-- CI workflow files
+The intended scaffold is now largely present in the repository:
 
-Do not invent commands from the proposal alone.
+- Backend: `apps/api/` with route/service/schema/model/worker separation
+- Frontend: `apps/web/` with `api/`, `types/generated/`, `stores/`, `views/`, and `router/`
+- Tests: `tests/unit`, `tests/integration`, `tests/e2e`, `tests/security`, `tests/smoke`
+- Ops: `deploy/docker/` plus Compose and Dockerfiles
 
-## Working guidance for future edits
+When making changes, prefer aligning implementation and docs to the existing checked-in structure rather than treating these paths as hypothetical.
 
-- Verify whether a requested change should modify the proposal document or actual implementation files; right now only the proposal exists.
-- If scaffolding the repo from the design doc, preserve the domain-oriented boundaries above rather than collapsing everything into one app layer.
-- Keep policy/audit enforcement embedded at critical entry points, as specified in the proposal.
-- Keep memory persistence confirmation-based; candidate memories should not be written directly as durable long-term memory by default.
-- Treat plugin/module execution as whitelist-first with explicit permission declarations.
+## Frozen technical decisions worth preserving
 
-## Frontend Architecture Review (V12)
+From the decision log and ADRs:
 
-A comprehensive frontend architecture review has been completed. Key findings and guidance:
+- SQLite + `sqlite-vec` is the MVP storage/vector choice; Chroma is deferred.
+- Task execution is modeled asynchronously.
+- Frontend stack is frozen to Vue 3 + Vite + TypeScript strict + Pinia + Vue Router 4 + Axios.
+- OpenAPI-generated frontend types are the intended source of truth for DTOs.
+- Authentication is JWT + refresh token.
+- Candidate memories must not be auto-promoted into long-term memory without user confirmation.
+- Parallel development assumes API, error codes, domain states, and audit structure are frozen first.
 
-### Technology Stack Assessment
-- **Vue 3 + Vite + TypeScript (strict)**: Recommended, solid choice
-- **Element Plus**: Good for enterprise use, but configure tree-shaking for bundle optimization
-- **Missing**: Pinia (state management), Vue Router 4 (routing), Axios/ky (HTTP client)
+## Documentation change rules
 
-### Recommended Frontend Stack
-```json
-{
-  "framework": "Vue 3 + Composition API",
-  "build": "Vite",
-  "language": "TypeScript (strict)",
-  "state": "Pinia",
-  "routing": "Vue Router 4",
-  "http": "Axios",
-  "ui": "Element Plus (with tree-shaking)",
-  "testing": "Vitest + Playwright"
-}
-```
+This repository’s main work product is its documentation set. When changing docs:
 
-### Frontend Directory Structure (Recommended)
-```
-apps/web/src/
-├── api/           # API layer: HTTP requests
-├── types/         # Type definitions (consider OpenAPI auto-generation)
-├── stores/        # Pinia stores (domain-oriented)
-├── composables/   # Reusable composition functions
-├── components/    # Components (common/ + domain/)
-├── views/         # Page components
-├── router/        # Vue Router config
-└── utils/         # Pure utility functions
-```
+- Prefer editing the split docs under `docs/` instead of expanding the legacy monolithic proposal files.
+- Keep current normative docs separate from historical inputs.
+- If you change a frozen contract, update all linked artifacts together, typically including:
+  - `docs/00-governance/decision-log.md`
+  - relevant ADRs under `docs/02-architecture/adr/`
+  - `docs/03-delivery/interface-freeze-checklist.md`
+  - affected delivery/review docs such as testing, quality gates, acceptance, or deployment docs
+- Use `CONTRIBUTING.md` and `.github/PULL_REQUEST_TEMPLATE.md` as the contribution/review baseline for PR-shaped changes.
 
-### Priority Improvements
-**P0 (Must do before implementation):**
-- Define Pinia as state management solution
-- Add Login/Auth page (missing in current proposal)
-- Add Avatar List page (missing in current proposal)
-- Configure Element Plus tree-shaking via unplugin-vue-components
+## Frontend-specific guidance
 
-**P1 (Should do for MVP quality):**
-- API type auto-generation mechanism (OpenAPI)
-- Task execution page with SSE real-time status
-- Global error handling and loading states
-- CSRF/XSS security configuration
+The frontend docs already freeze several important implementation choices:
 
-**P2 (Nice to have for Beta):**
-- Responsive design refinement
-- Accessibility improvements (WCAG AA)
-- Performance monitoring
+- Use Pinia, not Vuex.
+- Use OpenAPI generation as the only source for frontend API types.
+- Keep API access centralized in `api/client.ts` with auth headers, error interception, and `trace_id` propagation.
+- Use `AbortController` for cancellation-sensitive views.
+- Expose policy-blocked states and `trace_id` clearly in the UI.
 
-### MVP Pages (Updated)
-Based on review, recommend these pages for MVP:
-1. Login/Auth page
-2. Home/Dashboard
-3. Avatar List page
-4. Avatar Create page
-5. Persona Generate page
-6. Agent Management page
-7. Task Execution page
-8. Pending Memory Confirm page
-9. Memory Search page
-10. Audit Log page
-11. Settings page
-12. 404/Error page
+## Deployment and testing guidance
 
-### Key Frontend Decisions to Make
-1. **State Management**: Use Pinia (Vue 3 official), NOT Vuex
-2. **API Types**: Generate from OpenAPI spec, not manual maintenance
-3. **Error Handling**: Global Axios interceptor + error boundary components
-4. **Request Cancellation**: Use AbortController for tab switching scenarios
-5. **Real-time Updates**: Consider SSE for task status (vs polling)
+The repository now includes an executable MVP stack:
+
+- Deployment target: single-machine Docker Compose with `web`, `api`, `worker`, and optional `ollama`
+- Runtime ports: web `4173`, api `8000`, ollama `11434`
+- Health model: `GET /health` plus provider health under `/api/v1/provider/health`
+- Testing layers present: unit, integration, e2e, security, smoke
+- CI workflows exist under `.github/workflows/ci.yml` and `.github/workflows/e2e.yml`
+
+Keep docs and implementation aligned. If commands, ports, or workflow gates change, update both the code and the delivery/review docs together.
