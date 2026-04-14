@@ -135,15 +135,33 @@
         ],
         "summary": "Logout",
         "operationId": "logout_api_v1_auth_logout_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/LogoutRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "204": {
@@ -382,12 +400,12 @@
       }
     },
     "/api/v1/avatars/{avatar_id}": {
-      "put": {
+      "patch": {
         "tags": [
           "avatars"
         ],
         "summary": "Update Avatar",
-        "operationId": "update_avatar_api_v1_avatars__avatar_id__put",
+        "operationId": "update_avatar_api_v1_avatars__avatar_id__patch",
         "parameters": [
           {
             "name": "avatar_id",
@@ -859,23 +877,14 @@
         }
       }
     },
-    "/api/v1/avatars/{avatar_id}/agents/{agent_id}": {
+    "/api/v1/avatars/agents/{agent_id}": {
       "get": {
         "tags": [
           "agents"
         ],
         "summary": "Get Agent",
-        "operationId": "get_agent_api_v1_avatars__avatar_id__agents__agent_id__get",
+        "operationId": "get_agent_api_v1_avatars_agents__agent_id__get",
         "parameters": [
-          {
-            "name": "avatar_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Avatar Id"
-            }
-          },
           {
             "name": "agent_id",
             "in": "path",
@@ -930,17 +939,8 @@
           "agents"
         ],
         "summary": "Update Agent",
-        "operationId": "update_agent_api_v1_avatars__avatar_id__agents__agent_id__patch",
+        "operationId": "update_agent_api_v1_avatars_agents__agent_id__patch",
         "parameters": [
-          {
-            "name": "avatar_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Avatar Id"
-            }
-          },
           {
             "name": "agent_id",
             "in": "path",
@@ -1096,7 +1096,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PaginatedResponse"
+                  "$ref": "#/components/schemas/MemorySummaryPageResponse"
                 }
               }
             }
@@ -1177,7 +1177,74 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PaginatedResponse"
+                  "$ref": "#/components/schemas/MemoryPageResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/avatars/{avatar_id}/memories/{memory_id}": {
+      "get": {
+        "tags": [
+          "memories"
+        ],
+        "summary": "Get Avatar Memory",
+        "operationId": "get_avatar_memory_api_v1_avatars__avatar_id__memories__memory_id__get",
+        "parameters": [
+          {
+            "name": "avatar_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Avatar Id"
+            }
+          },
+          {
+            "name": "memory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Memory Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryResponse"
                 }
               }
             }
@@ -1332,6 +1399,29 @@
                 }
               ],
               "title": "Avatar Id"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Page Size"
             }
           },
           {
@@ -1519,7 +1609,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PaginatedResponse"
+                  "$ref": "#/components/schemas/MemorySummaryPageResponse"
                 }
               }
             }
@@ -2455,6 +2545,37 @@
         "type": "object",
         "title": "MemoryDecisionRequest"
       },
+      "MemoryPageResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MemoryResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "default": 1
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size",
+            "default": 20
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "MemoryPageResponse"
+      },
       "MemoryResponse": {
         "properties": {
           "id": {
@@ -2521,6 +2642,104 @@
           "created_at"
         ],
         "title": "MemoryResponse"
+      },
+      "MemorySummaryPageResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MemorySummaryResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "default": 1
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size",
+            "default": 20
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "MemorySummaryPageResponse"
+      },
+      "MemorySummaryResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "avatar_id": {
+            "type": "string",
+            "title": "Avatar Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "sensitivity": {
+            "type": "string",
+            "title": "Sensitivity"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "excerpt": {
+            "type": "string",
+            "title": "Excerpt"
+          },
+          "source_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Type"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "avatar_id",
+          "task_id",
+          "type",
+          "sensitivity",
+          "state",
+          "excerpt",
+          "created_at"
+        ],
+        "title": "MemorySummaryResponse"
       },
       "PaginatedResponse": {
         "properties": {
@@ -2703,6 +2922,41 @@
             ],
             "title": "Error"
           },
+          "worker_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Worker Id"
+          },
+          "claimed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claimed At"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
           "created_at": {
             "anyOf": [
               {
@@ -2714,6 +2968,18 @@
               }
             ],
             "title": "Created At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
           }
         },
         "type": "object",

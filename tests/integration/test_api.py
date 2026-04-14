@@ -62,6 +62,7 @@ def test_health_endpoint() -> None:
     assert payload["provider"]["status"] == "mock"
     assert payload["provider"]["version"] == "mock"
     assert payload["provider"]["chat_model_available"] is True
+    assert payload["provider"]["base_url"] == "http://localhost:11434"
     assert payload["provider"]["message"] == "Provider running in mock mode."
 
 
@@ -72,6 +73,59 @@ def test_login_and_me_flow() -> None:
     me = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {payload['access_token']}"})
     assert me.status_code == 200
     assert me.json()["email"] == "demo@example.com"
+
+
+def test_refresh_rotates_token_and_invalidates_previous_refresh_token() -> None:
+    login = client.post("/api/v1/auth/login", json={"email": "demo@example.com", "password": "demo123456"})
+    assert login.status_code == 200
+    payload = login.json()
+
+    refreshed = client.post("/api/v1/auth/refresh", json={"refresh_token": payload["refresh_token"]})
+    assert refreshed.status_code == 200
+    refreshed_payload = refreshed.json()
+    assert refreshed_payload["refresh_token"] != payload["refresh_token"]
+    assert refreshed_payload["access_token"] != payload["access_token"]
+
+    reused = client.post("/api/v1/auth/refresh", json={"refresh_token": payload["refresh_token"]})
+    assert reused.status_code == 401
+    assert reused.json()["error"]["code"] == "UNAUTHORIZED"
+
+
+def test_logout_revokes_access_and_refresh_tokens() -> None:
+    login = client.post("/api/v1/auth/login", json={"email": "demo@example.com", "password": "demo123456"})
+    assert login.status_code == 200
+    payload = login.json()
+    headers = {"Authorization": f"Bearer {payload['access_token']}"}
+
+    logout = client.post("/api/v1/auth/logout", headers=headers, json={"refresh_token": payload["refresh_token"]})
+    assert logout.status_code == 204
+
+    me = client.get("/api/v1/auth/me", headers=headers)
+    assert me.status_code == 401
+    assert me.json()["error"]["code"] == "UNAUTHORIZED"
+
+    refreshed = client.post("/api/v1/auth/refresh", json={"refresh_token": payload["refresh_token"]})
+    assert refreshed.status_code == 401
+    assert refreshed.json()["error"]["code"] == "UNAUTHORIZED"
+
+    audit = client.get("/api/v1/audit", params={"resource_type": "user"}, headers=auth_headers())
+    assert audit.status_code == 200
+    assert any(item["action"] == "auth_logout" for item in audit.json()["items"])
+
+
+def test_auth_audit_logs_include_login_and_refresh() -> None:
+    login = client.post("/api/v1/auth/login", json={"email": "demo@example.com", "password": "demo123456"})
+    assert login.status_code == 200
+    payload = login.json()
+
+    refresh = client.post("/api/v1/auth/refresh", json={"refresh_token": payload["refresh_token"]})
+    assert refresh.status_code == 200
+
+    headers = {"Authorization": f"Bearer {refresh.json()['access_token']}"}
+    audit = client.get("/api/v1/audit", params={"resource_type": "user"}, headers=headers)
+    assert audit.status_code == 200
+    assert any(item["action"] == "auth_login" and item["result"] == "success" for item in audit.json()["items"])
+    assert any(item["action"] == "auth_refresh" and item["result"] == "success" for item in audit.json()["items"])
 
 
 def test_unauthorized_access_uses_frozen_error_code() -> None:
@@ -138,11 +192,28 @@ def test_mvp_mainline_flow() -> None:
     memories = client.get(f"/api/v1/avatars/{avatar_id}/memories/pending", headers=headers)
     assert memories.status_code == 200
     assert memories.json()["total"] >= 1
+    assert "content" in memories.json()["items"][0]
+    assert "excerpt" not in memories.json()["items"][0]
     memory_id = memories.json()["items"][0]["id"]
 
     confirm = client.post(f"/api/v1/memories/{memory_id}/confirm", headers=headers, json={"reason": "looks good"})
     assert confirm.status_code == 200
     assert confirm.json()["state"] == "confirmed"
+
+    memory_search = client.get(
+        f"/api/v1/avatars/{avatar_id}/memories/search",
+        headers=headers,
+    )
+    assert memory_search.status_code == 200
+    assert memory_search.json()["total"] >= 1
+    assert "excerpt" in memory_search.json()["items"][0]
+    assert "content" not in memory_search.json()["items"][0]
+    assert memory_search.json()["items"][0]["id"] == memory_id
+
+    memory_detail = client.get(f"/api/v1/avatars/{avatar_id}/memories/{memory_id}", headers=headers)
+    assert memory_detail.status_code == 200
+    assert memory_detail.json()["id"] == memory_id
+    assert memory_detail.json()["content"]
 
     conflict = client.post(f"/api/v1/memories/{memory_id}/reject", headers=headers, json={})
     assert conflict.status_code == 409
@@ -221,7 +292,7 @@ def test_audit_logs_for_agent_crud() -> None:
     assert audit.json()["total"] >= 1
     assert any(item["action"] == "agent_created" for item in audit.json()["items"])
 
-    client.patch(f"/api/v1/avatars/{avatar_id}/agents/{agent_id}", headers=headers, json={"status": "disabled"})
+    client.patch(f"/api/v1/avatars/agents/{agent_id}", headers=headers, json={"status": "disabled"})
     audit = client.get("/api/v1/audit", params={"resource_type": "agent"}, headers=headers)
     assert any(item["action"] == "agent_disabled" for item in audit.json()["items"])
 
@@ -267,7 +338,7 @@ def test_avatar_detail_endpoint() -> None:
     assert detail.status_code == 200
     assert detail.json()["name"] == "Detail Test"
 
-    updated = client.put(f"/api/v1/avatars/{avatar_id}", headers=headers, json={"name": "Updated", "goal": "new goal", "visibility": "team"})
+    updated = client.patch(f"/api/v1/avatars/{avatar_id}", headers=headers, json={"name": "Updated", "goal": "new goal", "visibility": "team"})
     assert updated.status_code == 200
     assert updated.json()["name"] == "Updated"
 

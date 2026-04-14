@@ -1,0 +1,17 @@
+# Exclude local runtime and dev-only files from Docker build context
+.git
+.gitignore
+.claude
+.venv
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/.DS_Store
+**/node_modules
+**/dist
+**/build
+logs
+data/*.db
+data/*.sqlite
+data/*.sqlite3

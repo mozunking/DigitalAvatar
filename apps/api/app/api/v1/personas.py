@@ -2,10 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user, get_db
+from app.core.errors import AppError
 from app.models.models import Avatar, Persona, User
 from app.schemas.common import PaginatedResponse, PersonaGenerateRequest, PersonaResponse
 from app.services.audit import AuditService
 from app.services.personas import PersonaService
+from app.services.provider import ProviderUnavailableError
 
 router = APIRouter()
 service = PersonaService()
@@ -22,7 +24,14 @@ def generate_persona(
     avatar = db.get(Avatar, avatar_id)
     if not avatar or avatar.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Avatar not found")
-    persona = service.generate(db, avatar_id=avatar.id, samples=payload.samples)
+    try:
+        persona = service.generate(db, avatar_id=avatar.id, samples=payload.samples)
+    except ProviderUnavailableError as exc:
+        raise AppError(
+            code="PROVIDER_UNAVAILABLE",
+            message=str(exc),
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        ) from exc
     AuditService.append(
         db,
         trace_id=getattr(request.state, "trace_id", "-"),

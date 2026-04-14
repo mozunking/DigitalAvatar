@@ -3,7 +3,7 @@
     <h2>{{ t('persona.title') }}</h2>
     <div class="form-grid">
       <el-input v-model="samples" type="textarea" :rows="6" :placeholder="t('persona.samplePlaceholder')" />
-      <el-button type="primary" @click="generate" :disabled="!avatarStore.currentAvatarId">{{ t('persona.generate') }}</el-button>
+      <el-button type="primary" @click="generate" :disabled="!resolvedAvatarId">{{ t('persona.generate') }}</el-button>
     </div>
     <div class="list-grid">
       <article v-for="persona in workspace.personas" :key="persona.id" class="list-item persona-card">
@@ -25,37 +25,44 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useAvatarStore } from '../../stores/avatar'
 import { useWorkspaceStore } from '../../stores/workspace'
 
 const { t } = useI18n()
+const route = useRoute()
 const avatarStore = useAvatarStore()
 const workspace = useWorkspaceStore()
 const samples = ref('I prefer concise updates.\nI want safe, traceable automation.')
 
+const resolvedAvatarId = computed(() => {
+  const routeAvatarId = route.params.avatarId
+  return typeof routeAvatarId === 'string' && routeAvatarId ? routeAvatarId : avatarStore.currentAvatarId
+})
+
 const formatDate = (d: string) => new Date(d).toLocaleString()
 
 const load = async () => {
-  if (avatarStore.currentAvatarId) {
-    await workspace.loadAvatarWorkspace(avatarStore.currentAvatarId)
-  }
+  if (!resolvedAvatarId.value) return
+  avatarStore.setCurrentAvatar(resolvedAvatarId.value)
+  await workspace.loadAvatarWorkspace(resolvedAvatarId.value)
 }
 
 const generate = async () => {
-  if (!avatarStore.currentAvatarId) return
-  await workspace.generatePersona(avatarStore.currentAvatarId, samples.value.split('\n').filter(Boolean))
+  if (!resolvedAvatarId.value) return
+  await workspace.generatePersona(resolvedAvatarId.value, samples.value.split('\n').filter(Boolean))
   ElMessage.success(t('persona.generated'))
 }
 
 const activate = async (personaId: string) => {
-  await workspace.activatePersona(personaId)
+  await workspace.activatePersona(personaId, resolvedAvatarId.value)
   ElMessage.success(t('persona.activated'))
 }
 
-watch(() => avatarStore.currentAvatarId, load)
+watch(resolvedAvatarId, load)
 onMounted(load)
 </script>
 

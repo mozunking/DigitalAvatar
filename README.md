@@ -6,6 +6,10 @@ Digital Avatar 是一个面向个人专业用户与 AI-native 小团队的开源
 
 当前仓库已提交可运行的 MVP 实现，包含前后端脚手架、基础部署文件与自动化测试。当前主链路已覆盖：登录 -> 创建 Avatar -> 生成人设 -> 创建 Agent -> 执行任务 -> 候选记忆确认/拒绝 -> 审计查询。
 
+当前剩余阻塞仅有两类外部环境项：
+- live provider 最终验收仍依赖先升级本机 Ollama，并成功拉取 `qwen3.5:latest`
+- Docker Compose 真机联调证据仍受本机 Docker daemon 不可连接阻塞；当前已补齐配置、脚本、smoke 与阻塞证据
+
 ## 核心价值
 
 - 风格复刻：输出更像用户本人，而不是通用 AI
@@ -59,7 +63,9 @@ cd deploy/docker
 docker compose up --build
 ```
 
-默认会启动 `web`(4173)、`api`(8000)、`worker` 与 `ollama`。为保证本地演示与 CI 稳定，当前 Compose 默认对 `api` / `worker` 使用 `PROVIDER_MODE=mock`；若要切到 live provider，请显式调整环境变量并确保 Ollama 可用。当前默认聊天模型为 `qwen3.5:7b-instruct-q4_0`；若本机 Ollama 版本过旧，拉取 Qwen3 / Qwen3.5 可能返回 412，需要先升级 Ollama。
+默认会启动 `web`(4173)、`api`(8000)、`worker` 与 `ollama`。为保证本地演示与 CI 稳定，当前 Compose 默认对 `api` / `worker` 使用 `PROVIDER_MODE=mock`；若要切到 live provider，请显式调整环境变量并确保 Ollama 可用。当前默认聊天模型为 `qwen3.5:latest`；若本机 Ollama 版本过旧或本地没有 chat 模型，请先升级 Ollama 并执行 `ollama pull qwen3.5:latest`。
+
+仓库已补齐 `deploy/docker/ops/scripts/dev-up.sh`、`dev-down.sh`、`backup-db.sh`、`restore-db.sh`、`ops/health/smoke.http` 与 `ops/compose/docker-compose.override.yml`；根目录 `.dockerignore` 也已加入，避免把本地运行态文件带入镜像上下文。
 
 
 - [docs/README.md](docs/README.md) — 文档总入口与阅读顺序

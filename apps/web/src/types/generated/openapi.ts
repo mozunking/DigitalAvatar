@@ -153,13 +153,13 @@ export interface paths {
         };
         /** Get Avatar */
         get: operations["get_avatar_api_v1_avatars__avatar_id__get"];
-        /** Update Avatar */
-        put: operations["update_avatar_api_v1_avatars__avatar_id__put"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Update Avatar */
+        patch: operations["update_avatar_api_v1_avatars__avatar_id__patch"];
         trace?: never;
     };
     "/api/v1/avatars/{avatar_id}/persona/generate": {
@@ -231,7 +231,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/avatars/{avatar_id}/agents/{agent_id}": {
+    "/api/v1/avatars/agents/{agent_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -239,14 +239,14 @@ export interface paths {
             cookie?: never;
         };
         /** Get Agent */
-        get: operations["get_agent_api_v1_avatars__avatar_id__agents__agent_id__get"];
+        get: operations["get_agent_api_v1_avatars_agents__agent_id__get"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
         /** Update Agent */
-        patch: operations["update_agent_api_v1_avatars__avatar_id__agents__agent_id__patch"];
+        patch: operations["update_agent_api_v1_avatars_agents__agent_id__patch"];
         trace?: never;
     };
     "/api/v1/avatars/{avatar_id}/memories/search": {
@@ -275,6 +275,23 @@ export interface paths {
         };
         /** List Pending Memories */
         get: operations["list_pending_memories_api_v1_avatars__avatar_id__memories_pending_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/avatars/{avatar_id}/memories/{memory_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Avatar Memory */
+        get: operations["get_avatar_memory_api_v1_avatars__avatar_id__memories__memory_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -644,6 +661,26 @@ export interface components {
             /** Reason */
             reason?: string | null;
         };
+        /** MemoryPageResponse */
+        MemoryPageResponse: {
+            /** Items */
+            items: components["schemas"]["MemoryResponse"][];
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 20
+             */
+            page_size: number;
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
+        };
         /** MemoryResponse */
         MemoryResponse: {
             /** Id */
@@ -660,6 +697,50 @@ export interface components {
             state: string;
             /** Content */
             content: string;
+            /** Source Type */
+            source_type?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** MemorySummaryPageResponse */
+        MemorySummaryPageResponse: {
+            /** Items */
+            items: components["schemas"]["MemorySummaryResponse"][];
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 20
+             */
+            page_size: number;
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
+        };
+        /** MemorySummaryResponse */
+        MemorySummaryResponse: {
+            /** Id */
+            id: string;
+            /** Avatar Id */
+            avatar_id: string;
+            /** Task Id */
+            task_id: string | null;
+            /** Type */
+            type: string;
+            /** Sensitivity */
+            sensitivity: string;
+            /** State */
+            state: string;
+            /** Excerpt */
+            excerpt: string;
             /** Source Type */
             source_type?: string | null;
             /**
@@ -744,8 +825,16 @@ export interface components {
             result?: string | null;
             /** Error */
             error?: string | null;
+            /** Worker Id */
+            worker_id?: string | null;
+            /** Claimed At */
+            claimed_at?: string | null;
+            /** Started At */
+            started_at?: string | null;
             /** Created At */
             created_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
         };
         /** UpdateAgentStatusRequest */
         UpdateAgentStatusRequest: {
@@ -911,7 +1000,9 @@ export interface operations {
     logout_api_v1_auth_logout_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -1105,7 +1196,7 @@ export interface operations {
             };
         };
     };
-    update_avatar_api_v1_avatars__avatar_id__put: {
+    update_avatar_api_v1_avatars__avatar_id__patch: {
         parameters: {
             query?: never;
             header?: {
@@ -1321,14 +1412,13 @@ export interface operations {
             };
         };
     };
-    get_agent_api_v1_avatars__avatar_id__agents__agent_id__get: {
+    get_agent_api_v1_avatars_agents__agent_id__get: {
         parameters: {
             query?: never;
             header?: {
                 authorization?: string | null;
             };
             path: {
-                avatar_id: string;
                 agent_id: string;
             };
             cookie?: never;
@@ -1355,14 +1445,13 @@ export interface operations {
             };
         };
     };
-    update_agent_api_v1_avatars__avatar_id__agents__agent_id__patch: {
+    update_agent_api_v1_avatars_agents__agent_id__patch: {
         parameters: {
             query?: never;
             header?: {
                 authorization?: string | null;
             };
             path: {
-                avatar_id: string;
                 agent_id: string;
             };
             cookie?: never;
@@ -1417,7 +1506,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaginatedResponse"];
+                    "application/json": components["schemas"]["MemorySummaryPageResponse"];
                 };
             };
             /** @description Validation Error */
@@ -1453,7 +1542,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaginatedResponse"];
+                    "application/json": components["schemas"]["MemoryPageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_avatar_memory_api_v1_avatars__avatar_id__memories__memory_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                avatar_id: string;
+                memory_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryResponse"];
                 };
             };
             /** @description Validation Error */
@@ -1504,6 +1627,8 @@ export interface operations {
         parameters: {
             query?: {
                 avatar_id?: string | null;
+                page?: number;
+                page_size?: number;
             };
             header?: {
                 authorization?: string | null;
@@ -1623,7 +1748,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaginatedResponse"];
+                    "application/json": components["schemas"]["MemorySummaryPageResponse"];
                 };
             };
             /** @description Validation Error */

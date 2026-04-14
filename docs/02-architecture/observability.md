@@ -116,7 +116,7 @@
   "provider": {
     "mode": "mock",
     "status": "mock",
-    "model": "qwen3.5:7b-instruct-q4_0",
+    "model": "qwen3.5:latest",
     "version": "mock",
     "chat_model_available": true
   }

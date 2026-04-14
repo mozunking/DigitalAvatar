@@ -10,7 +10,7 @@ from app.core.config import get_settings
 logger = logging.getLogger(__name__)
 
 # Default model if auto-detection finds nothing
-DEFAULT_MODEL = "qwen3.5:7b-instruct-q4_0"
+DEFAULT_MODEL = "qwen3.5:latest"
 EMBEDDING_FAMILIES = {"bert"}
 EMBEDDING_MODEL_KEYWORDS = ("embedding", "reranker", "bge")
 UNKNOWN_VERSION = "unknown"
@@ -237,6 +237,7 @@ class OllamaProvider:
             "mode": self.mode,
             "version": self._version,
             "chat_model_available": self._chat_model_available,
+            "base_url": self.settings.ollama_base_url,
             "message": message,
         }
 
@@ -263,4 +264,5 @@ class OllamaProvider:
             "model": self.model,
             "version": self._version,
             "chat_model_available": self._chat_model_available,
+            "base_url": self.settings.ollama_base_url,
         }

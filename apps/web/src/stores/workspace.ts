@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { agentApi, auditApi, memoryApi, personaApi, taskApi } from '../api'
-import type { AgentResponse, AuditLogResponse, MemoryResponse, PersonaResponse, TaskResponse } from '../types/generated/api'
+import type { AgentResponse, AuditLogResponse, MemoryResponse, MemorySummaryResponse, PersonaResponse, TaskResponse } from '../types/generated/api'
 import { useAvatarStore } from './avatar'
 
 export const useWorkspaceStore = defineStore('workspace', {
@@ -9,7 +9,7 @@ export const useWorkspaceStore = defineStore('workspace', {
     agents: [] as AgentResponse[],
     tasks: [] as TaskResponse[],
     memories: [] as MemoryResponse[],
-    confirmedMemories: [] as MemoryResponse[],
+    confirmedMemories: [] as MemorySummaryResponse[],
     auditLogs: [] as AuditLogResponse[],
     loading: false,
     workspaceError: ''
@@ -44,13 +44,12 @@ export const useWorkspaceStore = defineStore('workspace', {
       this.personas.unshift(data)
       return data
     },
-    async activatePersona(personaId: string) {
+    async activatePersona(personaId: string, avatarId?: string) {
       const { data } = await personaApi.activate(personaId)
-      // Update the personas list to reflect activation
       const avatarStore = useAvatarStore()
-      const avatarId = avatarStore.currentAvatarId
-      if (avatarId) {
-        await this.loadAvatarWorkspace(avatarId)
+      const resolvedAvatarId = avatarId || avatarStore.currentAvatarId
+      if (resolvedAvatarId) {
+        await this.loadAvatarWorkspace(resolvedAvatarId)
       }
       return data
     },
@@ -59,8 +58,8 @@ export const useWorkspaceStore = defineStore('workspace', {
       this.agents.unshift(data)
       return data
     },
-    async updateAgentStatus(avatarId: string, agentId: string, status: 'ready' | 'disabled') {
-      const { data } = await agentApi.updateStatus(avatarId, agentId, status)
+    async updateAgentStatus(agentId: string, status: 'ready' | 'disabled') {
+      const { data } = await agentApi.updateStatus(agentId, status)
       const index = this.agents.findIndex((item) => item.id === agentId)
       if (index >= 0) {
         this.agents[index] = data
@@ -100,10 +99,24 @@ export const useWorkspaceStore = defineStore('workspace', {
       const { data } = await memoryApi.search(avatarId, query, type)
       return data.items
     },
+    async getMemoryDetail(avatarId: string, memoryId: string) {
+      const { data } = await memoryApi.getByAvatar(avatarId, memoryId)
+      return data
+    },
     async confirmMemory(memoryId: string, reason?: string) {
       const { data } = await memoryApi.confirm(memoryId, reason)
       this.memories = this.memories.filter((item) => item.id !== memoryId)
-      this.confirmedMemories.unshift(data)
+      this.confirmedMemories.unshift({
+        id: data.id,
+        avatar_id: data.avatar_id,
+        task_id: data.task_id,
+        type: data.type,
+        sensitivity: data.sensitivity,
+        state: data.state,
+        excerpt: data.content.slice(0, 120),
+        source_type: data.source_type,
+        created_at: data.created_at,
+      })
     },
     async rejectMemory(memoryId: string, reason?: string) {
       await memoryApi.reject(memoryId, reason)

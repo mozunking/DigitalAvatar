@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { authTokenStorage } from './authStorage'
 
 let traceCounter = 0
 
@@ -15,7 +16,7 @@ const api = axios.create({
 })
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('digital-avatar-access-token')
+  const token = authTokenStorage.getAccessToken()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
@@ -33,24 +34,21 @@ api.interceptors.response.use(
     const errorData = error.response?.data?.error
 
     if (status === 401 && !originalRequest._retry) {
-      const refreshToken = localStorage.getItem('digital-avatar-refresh-token')
+      const refreshToken = authTokenStorage.getRefreshToken()
       if (refreshToken) {
         originalRequest._retry = true
         try {
           const { data } = await axios.post(`${apiBaseUrl}/auth/refresh`, { refresh_token: refreshToken })
-          localStorage.setItem('digital-avatar-access-token', data.access_token)
-          localStorage.setItem('digital-avatar-refresh-token', data.refresh_token)
+          authTokenStorage.setTokens(data.access_token, data.refresh_token)
           originalRequest.headers.Authorization = `Bearer ${data.access_token}`
           return api(originalRequest)
         } catch {
-          localStorage.removeItem('digital-avatar-access-token')
-          localStorage.removeItem('digital-avatar-refresh-token')
+          authTokenStorage.clear()
           window.location.href = '/login'
           return Promise.reject(error)
         }
       }
-      localStorage.removeItem('digital-avatar-access-token')
-      localStorage.removeItem('digital-avatar-refresh-token')
+      authTokenStorage.clear()
       if (window.location.pathname !== '/login') {
         window.location.href = '/login'
       }

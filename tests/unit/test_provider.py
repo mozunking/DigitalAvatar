@@ -45,6 +45,7 @@ class TestOllamaProviderHealthCheck:
             assert result["mode"] == "live"
             assert result["version"] == "unknown"
             assert result["chat_model_available"] is False
+            assert result["base_url"] == provider.settings.ollama_base_url
             assert provider._available is False
 
     @patch.dict("os.environ", {"PROVIDER_MODE": "live"}, clear=False)
@@ -76,13 +77,14 @@ class TestOllamaProviderHealthCheck:
             assert result["model"] == provider.settings.ollama_model
             assert result["version"] == "0.1.28"
             assert result["chat_model_available"] is False
+            assert result["base_url"] == provider.settings.ollama_base_url
             assert "No chat-capable Ollama model available" in result["message"]
             assert provider._available is False
 
     @patch.dict("os.environ", {"PROVIDER_MODE": "live"}, clear=False)
     def test_health_check_prefers_configured_chat_model(self) -> None:
         provider = OllamaProvider()
-        provider.settings.ollama_model = "qwen3.5:7b-instruct-q4_0"
+        provider.settings.ollama_model = "qwen3.5:latest"
         with patch("app.services.provider.httpx.Client") as mock_client:
             version_response = MagicMock()
             version_response.json.return_value = {"version": "0.9.0"}
@@ -92,7 +94,7 @@ class TestOllamaProviderHealthCheck:
             tags_response.json.return_value = {
                 "models": [
                     {"name": "bge-m3:latest", "details": {"family": "bert", "families": ["bert"]}},
-                    {"name": "qwen3.5:7b-instruct-q4_0", "details": {"family": "qwen3", "families": ["qwen3"]}},
+                    {"name": "qwen3.5:latest", "details": {"family": "qwen3", "families": ["qwen3"]}},
                     {"name": "llama3.2:latest", "details": {"family": "llama", "families": ["llama"]}},
                 ]
             }
@@ -105,9 +107,10 @@ class TestOllamaProviderHealthCheck:
 
             result = provider.health_check(force=True)
             assert result["status"] == "ok"
-            assert result["model"] == "qwen3.5:7b-instruct-q4_0"
+            assert result["model"] == "qwen3.5:latest"
             assert result["version"] == "0.9.0"
             assert result["chat_model_available"] is True
+            assert result["base_url"] == provider.settings.ollama_base_url
             assert provider._available is True
 
     @patch.dict("os.environ", {"PROVIDER_MODE": "mock"}, clear=False)
@@ -115,7 +118,9 @@ class TestOllamaProviderHealthCheck:
         provider = OllamaProvider()
         result = provider.chat("test prompt")
         assert "[Mock Mode]" in result
-        assert provider.health_check()["message"] == "Provider running in mock mode."
+        health = provider.health_check()
+        assert health["message"] == "Provider running in mock mode."
+        assert health["base_url"] == provider.settings.ollama_base_url
 
     @patch.dict("os.environ", {"PROVIDER_MODE": "live"}, clear=False)
     def test_chat_retries_on_connection_error(self) -> None:

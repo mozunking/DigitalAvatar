@@ -15,6 +15,9 @@ export default defineConfig({
       resolvers: [ElementPlusResolver()]
     })
   ],
+  test: {
+    environment: 'jsdom'
+  },
   build: {
     rollupOptions: {
       output: {

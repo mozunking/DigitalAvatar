@@ -11,8 +11,12 @@
 *.egg-info/
 
 # Node
+node_modules/
 apps/web/node_modules/
 apps/web/dist/
+
+# Local tooling
+.workbuddy/
 
 # Build artifacts
 apps/api/build/

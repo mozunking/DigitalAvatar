@@ -7,6 +7,7 @@ from app.core.errors import AppError
 from app.core.security import decode_token
 from app.db.session import SessionLocal
 from app.models.models import User
+from app.services.auth import AuthService
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -35,6 +36,8 @@ def get_current_user(
         raise AppError(code="UNAUTHORIZED", message="Invalid token", status_code=401) from exc
     if payload.get("type") != "access":
         raise AppError(code="UNAUTHORIZED", message="Invalid token type", status_code=401)
+    if AuthService.is_token_revoked(db, payload.get("jti")):
+        raise AppError(code="UNAUTHORIZED", message="Token revoked", status_code=401)
 
     user = db.get(User, payload.get("sub"))
     if not user:

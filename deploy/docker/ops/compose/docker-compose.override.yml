@@ -1,0 +1,7 @@
+services:
+  api:
+    environment:
+      PROVIDER_MODE: live
+  worker:
+    environment:
+      PROVIDER_MODE: live

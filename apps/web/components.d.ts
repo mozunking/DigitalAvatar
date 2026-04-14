@@ -38,6 +38,7 @@ declare module 'vue' {
     ElTabs: typeof import('element-plus/es')['ElTabs']
     ElTag: typeof import('element-plus/es')['ElTag']
     GrowthReportCard: typeof import('./src/components/common/GrowthReportCard.vue')['default']
+    OnboardingGuide: typeof import('./src/components/common/OnboardingGuide.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SidebarContent: typeof import('./src/components/common/SidebarContent.vue')['default']

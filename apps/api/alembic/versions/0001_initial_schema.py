@@ -76,6 +76,9 @@ def upgrade() -> None:
         sa.Column("error_text", sa.Text(), nullable=True),
         sa.Column("trace_id", sa.String(length=64), nullable=False),
         sa.Column("status", sa.String(length=20), nullable=False),
+        sa.Column("worker_id", sa.String(length=64), nullable=True),
+        sa.Column("claimed_at", sa.DateTime(), nullable=True),
+        sa.Column("started_at", sa.DateTime(), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("completed_at", sa.DateTime(), nullable=True),
     )
@@ -83,6 +86,8 @@ def upgrade() -> None:
     op.create_index("ix_tasks_agent_id", "tasks", ["agent_id"], unique=False)
     op.create_index("ix_tasks_trace_id", "tasks", ["trace_id"], unique=False)
     op.create_index("ix_tasks_status", "tasks", ["status"], unique=False)
+    op.create_index("ix_tasks_worker_id", "tasks", ["worker_id"], unique=False)
+    op.create_index("ix_tasks_claimed_at", "tasks", ["claimed_at"], unique=False)
     op.create_index("ix_tasks_created_at", "tasks", ["created_at"], unique=False)
 
     op.create_table(
@@ -134,6 +139,8 @@ def downgrade() -> None:
     op.drop_index("ix_memories_avatar_id", table_name="memories")
     op.drop_table("memories")
     op.drop_index("ix_tasks_created_at", table_name="tasks")
+    op.drop_index("ix_tasks_claimed_at", table_name="tasks")
+    op.drop_index("ix_tasks_worker_id", table_name="tasks")
     op.drop_index("ix_tasks_status", table_name="tasks")
     op.drop_index("ix_tasks_trace_id", table_name="tasks")
     op.drop_index("ix_tasks_agent_id", table_name="tasks")

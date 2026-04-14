@@ -20,14 +20,15 @@
           <el-tag size="small" :type="tagType(memory.type)">{{ memory.type }}</el-tag>
           <small>{{ formatDate(memory.created_at) }}</small>
         </div>
-        <p class="memory-content">{{ memory.content }}</p>
+        <p class="memory-content">{{ memory.excerpt }}</p>
       </article>
     </div>
   </section>
 
   <!-- Memory Detail Drawer -->
   <el-drawer v-model="drawerVisible" :title="t('memories.detailTitle')" size="420px">
-    <template v-if="selectedMemory">
+    <el-skeleton v-if="detailLoading" animated :rows="6" />
+    <template v-else-if="selectedMemory">
       <el-descriptions :column="1" border>
         <el-descriptions-item :label="t('memories.type')">{{ selectedMemory.type }}</el-descriptions-item>
         <el-descriptions-item :label="t('memories.state')">
@@ -51,7 +52,7 @@ import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { useAvatarStore } from '../../stores/avatar'
 import { useWorkspaceStore } from '../../stores/workspace'
-import type { MemoryResponse } from '../../types/generated/api'
+import type { MemoryResponse, MemorySummaryResponse } from '../../types/generated/api'
 
 const { t } = useI18n()
 const avatarStore = useAvatarStore()
@@ -59,9 +60,10 @@ const workspace = useWorkspaceStore()
 
 const query = ref('')
 const typeFilter = ref('')
-const results = ref<MemoryResponse[]>([])
+const results = ref<MemorySummaryResponse[]>([])
 const loading = ref(false)
 const drawerVisible = ref(false)
+const detailLoading = ref(false)
 const selectedMemory = ref<MemoryResponse | null>(null)
 
 const tagType = (type: string) => {
@@ -71,9 +73,19 @@ const tagType = (type: string) => {
 
 const formatDate = (d: string) => new Date(d).toLocaleString()
 
-const openDetail = (memory: MemoryResponse) => {
-  selectedMemory.value = memory
+const openDetail = async (memory: MemorySummaryResponse) => {
+  if (!avatarStore.currentAvatarId) return
   drawerVisible.value = true
+  detailLoading.value = true
+  selectedMemory.value = null
+  try {
+    selectedMemory.value = await workspace.getMemoryDetail(avatarStore.currentAvatarId, memory.id)
+  } catch {
+    drawerVisible.value = false
+    ElMessage.error(t('memories.searchFailed'))
+  } finally {
+    detailLoading.value = false
+  }
 }
 
 const doSearch = async () => {

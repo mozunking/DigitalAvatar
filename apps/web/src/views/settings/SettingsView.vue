@@ -9,16 +9,21 @@
       </template>
       <el-descriptions :column="2" border>
         <el-descriptions-item :label="t('settings.providerLabel')">
-          <el-tag :type="providerInfo.mode === 'live' ? 'success' : 'warning'" size="small">
-            {{ providerInfo.mode === 'live' ? t('settings.ollamaOnline') : t('settings.ollamaMock') }}
+          <el-tag :type="providerStatusTagType" size="small">
+            {{ providerModeLabel }} · {{ providerStatusLabel }}
           </el-tag>
         </el-descriptions-item>
         <el-descriptions-item :label="t('settings.model')">{{ providerInfo.model || t('settings.modelNotDetected') }}</el-descriptions-item>
+        <el-descriptions-item :label="t('settings.providerVersion')">{{ providerInfo.version }}</el-descriptions-item>
+        <el-descriptions-item :label="t('settings.chatModelAvailability')">
+          {{ providerInfo.chatModelAvailable ? t('settings.chatModelAvailable') : t('settings.chatModelUnavailable') }}
+        </el-descriptions-item>
         <el-descriptions-item :label="t('settings.ollamaUrl')">{{ providerInfo.url }}</el-descriptions-item>
       </el-descriptions>
       <div style="margin-top: 12px; color: #666; font-size: 0.875rem;">
-        <p v-if="providerInfo.mode !== 'live'">
-          {{ t('settings.ollamaNotConnected') }}<code>ollama serve</code>{{ t('settings.thenPull') }}<code>ollama pull qwen3.5:7b-instruct-q4_0</code>
+        <p v-if="showProviderMessage">{{ providerInfo.message }}</p>
+        <p v-if="showProviderTroubleshooting">
+          {{ t('settings.ollamaNotConnected') }}<code>ollama serve</code>{{ t('settings.thenPull') }}<code>ollama pull qwen3.5:latest</code>
         </p>
       </div>
     </el-card>
@@ -82,23 +87,35 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '../../stores/auth'
 import { useLocaleStore } from '../../stores/locale'
 import api from '../../api/client'
+import {
+  normalizeProviderHealth,
+  providerModeLabelKey,
+  providerStatusLabelKey,
+  providerTagType,
+} from './providerReadiness'
 
 const { t, locale } = useI18n()
 const auth = useAuthStore()
 const localeStore = useLocaleStore()
 const router = useRouter()
 
-const providerInfo = ref({ mode: 'unknown', model: '', url: 'http://localhost:11434' })
+const providerInfo = ref(normalizeProviderHealth())
 const exporting = ref(false)
 const deleting = ref(false)
 const deleteDialogVisible = ref(false)
+
+const providerModeLabel = computed(() => t(providerModeLabelKey(providerInfo.value.mode)))
+const providerStatusLabel = computed(() => t(providerStatusLabelKey(providerInfo.value.status)))
+const providerStatusTagType = computed(() => providerTagType(providerInfo.value))
+const showProviderTroubleshooting = computed(() => providerInfo.value.mode !== 'live' || providerInfo.value.status !== 'ok')
+const showProviderMessage = computed(() => Boolean(providerInfo.value.message))
 
 const switchLocale = (val: string) => {
   localeStore.setLocale(val as 'zh-CN' | 'en-US')
@@ -108,13 +125,9 @@ const switchLocale = (val: string) => {
 onMounted(async () => {
   try {
     const res = await api.get('/provider/health')
-    providerInfo.value = {
-      mode: res.data?.mode || 'mock',
-      model: res.data?.model || '',
-      url: 'http://localhost:11434'
-    }
+    providerInfo.value = normalizeProviderHealth(res.data)
   } catch {
-    providerInfo.value.mode = 'mock'
+    providerInfo.value = normalizeProviderHealth()
   }
 })
 
@@ -141,7 +154,7 @@ const handleDelete = async () => {
   deleting.value = true
   try {
     await api.delete('/privacy/delete')
-    auth.logout()
+    await auth.logout()
     ElMessage.success(t('settings.accountDeleted'))
     router.push('/login')
   } catch (e: any) {

@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from http import HTTPStatus
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request, status
@@ -46,12 +47,23 @@ async def add_trace_id(request: Request, call_next):
     return response
 
 
+def _http_error_code(status_code: int) -> str:
+    code_map = {
+        HTTPStatus.BAD_REQUEST: "VALIDATION_ERROR",
+        HTTPStatus.UNAUTHORIZED: "UNAUTHORIZED",
+        HTTPStatus.FORBIDDEN: "FORBIDDEN",
+        HTTPStatus.NOT_FOUND: "NOT_FOUND",
+        HTTPStatus.TOO_MANY_REQUESTS: "RATE_LIMITED",
+    }
+    return code_map.get(HTTPStatus(status_code), "INTERNAL_ERROR")
+
+
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     trace_id = getattr(request.state, "trace_id", uuid4().hex)
     payload = ErrorResponse(
         error=ErrorDetail(
-            code=f"HTTP_{exc.status_code}",
+            code=_http_error_code(exc.status_code),
             message=str(exc.detail),
             trace_id=trace_id,
             details={},
@@ -93,7 +105,7 @@ async def value_error_handler(request: Request, exc: ValueError):
     trace_id = getattr(request.state, "trace_id", uuid4().hex)
     payload = ErrorResponse(
         error=ErrorDetail(
-            code="BAD_REQUEST",
+            code="VALIDATION_ERROR",
             message=str(exc),
             trace_id=trace_id,
             details={},
@@ -124,6 +136,7 @@ def health() -> dict:
             "model": provider_health.get("model", "unknown"),
             "version": provider_health.get("version", "unknown"),
             "chat_model_available": provider_health.get("chat_model_available", False),
+            "base_url": provider_health.get("base_url", settings.ollama_base_url),
             "message": provider_health.get("message"),
         },
     }
@@ -157,6 +170,7 @@ def metrics() -> dict:
             "provider_model": provider_health.get("model", "unknown"),
             "provider_version": provider_health.get("version", "unknown"),
             "provider_chat_model_available": provider_health.get("chat_model_available", False),
+            "provider_base_url": provider_health.get("base_url", settings.ollama_base_url),
             "provider_message": provider_health.get("message"),
         },
     }

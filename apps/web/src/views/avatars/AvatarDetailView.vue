@@ -48,6 +48,7 @@
 
           <GrowthReportCard
             :avatar-name="avatar.name"
+            :current-avatar-id="avatarId"
             :personas="workspace.personas"
             :tasks="workspace.tasks"
             :pending-memories="workspace.memories"
@@ -58,17 +59,17 @@
 
           <!-- Related Stats -->
           <div class="stats-grid">
-            <el-card shadow="hover" class="stat-card" @click="$router.push('/persona')">
+            <el-card shadow="hover" class="stat-card" @click="$router.push(`/avatars/${avatarId}/persona`)">
               <el-statistic :title="t('persona.title')" :value="workspace.personas.length" />
               <small v-if="workspace.personas.length > 0">{{ t('persona.active') }}: v{{ workspace.personas[0].version }}</small>
             </el-card>
-            <el-card shadow="hover" class="stat-card" @click="$router.push('/agents')">
+            <el-card shadow="hover" class="stat-card" @click="$router.push(`/avatars/${avatarId}/agents`)">
               <el-statistic :title="t('agents.title')" :value="workspace.agents.length" />
             </el-card>
             <el-card shadow="hover" class="stat-card" @click="$router.push('/tasks')">
               <el-statistic :title="t('tasks.title')" :value="workspace.tasks.length" />
             </el-card>
-            <el-card shadow="hover" class="stat-card" @click="$router.push('/memories')">
+            <el-card shadow="hover" class="stat-card" @click="$router.push('/memories/pending')">
               <el-statistic :title="t('memories.title')" :value="workspace.memories.length" />
             </el-card>
           </div>

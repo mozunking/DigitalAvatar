@@ -7,10 +7,10 @@
       <RouterLink to="/dashboard" @click="$emit('navigate')">{{ t('nav.dashboard') }}</RouterLink>
       <RouterLink to="/avatars" @click="$emit('navigate')">{{ t('nav.avatars') }}</RouterLink>
       <RouterLink to="/avatars/new" @click="$emit('navigate')">{{ t('nav.newAvatar') }}</RouterLink>
-      <RouterLink to="/persona" @click="$emit('navigate')">{{ t('nav.persona') }}</RouterLink>
-      <RouterLink to="/agents" @click="$emit('navigate')">{{ t('nav.agents') }}</RouterLink>
+      <RouterLink :to="currentAvatarId ? `/avatars/${currentAvatarId}/persona` : '/persona'" @click="$emit('navigate')">{{ t('nav.persona') }}</RouterLink>
+      <RouterLink :to="currentAvatarId ? `/avatars/${currentAvatarId}/agents` : '/agents'" @click="$emit('navigate')">{{ t('nav.agents') }}</RouterLink>
       <RouterLink to="/tasks" @click="$emit('navigate')">{{ t('nav.tasks') }}</RouterLink>
-      <RouterLink to="/memories" @click="$emit('navigate')">{{ t('nav.memories') }}</RouterLink>
+      <RouterLink to="/memories/pending" @click="$emit('navigate')">{{ t('nav.memories') }}</RouterLink>
       <RouterLink to="/memories/search" @click="$emit('navigate')">{{ t('nav.memorySearch') }}</RouterLink>
       <RouterLink to="/audit" @click="$emit('navigate')">{{ t('nav.audit') }}</RouterLink>
       <RouterLink to="/settings" @click="$emit('navigate')">{{ t('nav.settings') }}</RouterLink>
@@ -30,6 +30,7 @@ import type { useAuthStore } from '../../stores/auth'
 
 defineProps<{
   auth: ReturnType<typeof useAuthStore>
+  currentAvatarId?: string
 }>()
 
 defineEmits<{

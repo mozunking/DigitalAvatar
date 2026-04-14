@@ -5,6 +5,7 @@ import type {
   AvatarResponse,
   LoginResponse,
   MemoryResponse,
+  MemorySummaryResponse,
   PaginatedResponse,
   PersonaResponse,
   TaskResponse
@@ -25,13 +26,14 @@ export const authApi = {
     api.post<LoginResponse>('/auth/register', { email, password, display_name: displayName }),
   me: () => api.get('/auth/me'),
   refresh: (refreshToken: string) => api.post<LoginResponse>('/auth/refresh', { refresh_token: refreshToken }),
+  logout: (refreshToken?: string) => api.post('/auth/logout', { refresh_token: refreshToken ?? null }),
 }
 
 export const avatarApi = {
   list: (page = 1, pageSize = 20) => api.get<PaginatedResponse<AvatarResponse>>('/avatars', { params: { page, page_size: pageSize } }),
   get: (avatarId: string) => api.get<AvatarResponse>(`/avatars/${avatarId}`),
   create: (payload: { name: string; goal: string; visibility: string }) => api.post<AvatarResponse>('/avatars', payload),
-  update: (avatarId: string, payload: { name: string; goal: string; visibility: string }) => api.put<AvatarResponse>(`/avatars/${avatarId}`, payload),
+  update: (avatarId: string, payload: { name: string; goal: string; visibility: string }) => api.patch<AvatarResponse>(`/avatars/${avatarId}`, payload),
 }
 
 export const personaApi = {
@@ -43,11 +45,11 @@ export const personaApi = {
 
 export const agentApi = {
   list: (avatarId: string, page = 1, pageSize = 20) => api.get<PaginatedResponse<AgentResponse>>(`/avatars/${avatarId}/agents`, { params: { page, page_size: pageSize } }),
-  get: (avatarId: string, agentId: string) => api.get<AgentResponse>(`/avatars/${avatarId}/agents/${agentId}`),
+  get: (agentId: string) => api.get<AgentResponse>(`/avatars/agents/${agentId}`),
   create: (avatarId: string, payload: { name: string; role_prompt: string; permissions: string[] }) =>
     api.post<AgentResponse>(`/avatars/${avatarId}/agents`, payload),
-  updateStatus: (avatarId: string, agentId: string, status: 'ready' | 'disabled') =>
-    api.patch<AgentResponse>(`/avatars/${avatarId}/agents/${agentId}`, { status }),
+  updateStatus: (agentId: string, status: 'ready' | 'disabled') =>
+    api.patch<AgentResponse>(`/avatars/agents/${agentId}`, { status }),
 }
 
 export const taskApi = {
@@ -57,9 +59,10 @@ export const taskApi = {
 }
 
 export const memoryApi = {
-  list: (state?: string, avatarId?: string) => api.get<PaginatedResponse<MemoryResponse>>('/memories', { params: { ...(state ? { state } : {}), ...(avatarId ? { avatar_id: avatarId } : {}) } }),
+  list: (state?: string, avatarId?: string) => api.get<PaginatedResponse<MemorySummaryResponse>>('/memories', { params: { ...(state ? { state } : {}), ...(avatarId ? { avatar_id: avatarId } : {}) } }),
   get: (memoryId: string) => api.get<MemoryResponse>(`/memories/${memoryId}`),
-  search: (avatarId: string, query?: string, type?: string) => api.get<PaginatedResponse<MemoryResponse>>(`/avatars/${avatarId}/memories/search`, { params: { ...(query ? { query } : {}), ...(type ? { type } : {}) } }),
+  getByAvatar: (avatarId: string, memoryId: string) => api.get<MemoryResponse>(`/avatars/${avatarId}/memories/${memoryId}`),
+  search: (avatarId: string, query?: string, type?: string) => api.get<PaginatedResponse<MemorySummaryResponse>>(`/avatars/${avatarId}/memories/search`, { params: { ...(query ? { query } : {}), ...(type ? { type } : {}) } }),
   pending: (avatarId: string) => api.get<PaginatedResponse<MemoryResponse>>(`/avatars/${avatarId}/memories/pending`),
   confirm: (memoryId: string, reason?: string) => api.post<MemoryResponse>(`/memories/${memoryId}/confirm`, { reason }),
   reject: (memoryId: string, reason?: string) => api.post<MemoryResponse>(`/memories/${memoryId}/reject`, { reason }),

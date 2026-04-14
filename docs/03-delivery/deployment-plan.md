@@ -18,19 +18,22 @@
 ## 3. 最低目录结构
 
 ```text
-docker-compose.yml
-.env.example
-ops/
-├── compose/
-│   └── docker-compose.override.yml
-├── scripts/
-│   ├── dev-up.sh
-│   ├── dev-down.sh
-│   ├── backup-db.sh
-│   └── restore-db.sh
-└── health/
-    └── smoke.http
+deploy/docker/
+├── docker-compose.yml
+├── .env.example
+└── ops/
+    ├── compose/
+    │   └── docker-compose.override.yml
+    ├── scripts/
+    │   ├── dev-up.sh
+    │   ├── dev-down.sh
+    │   ├── backup-db.sh
+    │   └── restore-db.sh
+    └── health/
+        └── smoke.http
 ```
+
+当前仓库已提供以上真实文件落点于 `deploy/docker/` 下；若需切换 live provider，可在默认 Compose 之外叠加 `deploy/docker/ops/compose/docker-compose.override.yml`。
 
 ## 4. 环境变量清单
 
@@ -44,7 +47,7 @@ ops/
 | `JWT_ACCESS_TTL_MINUTES` | 是 | `15` | Access token 有效期 |
 | `JWT_REFRESH_TTL_DAYS` | 是 | `7` | Refresh token 有效期 |
 | `OLLAMA_BASE_URL` | 否 | `http://ollama:11434` | Provider 地址 |
-| `OLLAMA_MODEL` | 否 | `qwen3.5:7b-instruct-q4_0` | Ollama 模型名 |
+| `OLLAMA_MODEL` | 否 | `qwen3.5:latest` | Ollama 模型名 |
 | `PROVIDER_MODE` | 是 | `mock` | Provider 模式；演示环境默认 mock |
 | `LOG_LEVEL` | 是 | `INFO` | 日志级别 |
 | `DATA_DIR` | 否 | `./data` | 业务数据目录挂载根 |
@@ -63,6 +66,7 @@ ops/
 - 日志滚动策略
 - SQLite 备份策略
 - 数据迁移说明
+- Docker 构建上下文排除规则（`.dockerignore`）
 
 ## 6. 健康检查
 
@@ -99,11 +103,11 @@ ops/
 ### 备份
 - SQLite：复制数据库文件前先停止写入或走安全快照命令。
 - 日志：按日期归档压缩。
-- 备份命令：`ops/scripts/backup-db.sh`
+- 备份命令：`deploy/docker/ops/scripts/backup-db.sh`
 
 ### 恢复
 - 恢复前停止 `api` 与 `worker`
-- 使用 `ops/scripts/restore-db.sh <backup-file>`
+- 使用 `deploy/docker/ops/scripts/restore-db.sh <backup-file>`
 - 恢复后执行 `GET /health` 与最小 smoke 测试
 
 ## 9. 数据迁移说明
@@ -122,4 +126,5 @@ ops/
 ## 11. 脚手架生成要求
 
 - 本文档必须能直接生成：`docker-compose.yml`、`.env.example`、启动/停止脚本、备份/恢复脚本、health smoke 文件。
+- 当前仓库对应实现位置：`deploy/docker/docker-compose.yml`、`deploy/docker/.env.example`、`deploy/docker/ops/scripts/*`、`deploy/docker/ops/health/smoke.http`、`deploy/docker/ops/compose/docker-compose.override.yml`、仓库根 `.dockerignore`。
 - 若无法回答“有哪些服务、端口多少、挂载哪里、环境变量是什么、怎么备份恢复”，则部署规格未达 scaffold-ready。

@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "test": "vitest",
     "generate:types": "mkdir -p openapi src/types/generated && PYTHONPATH=../api python3 -c \"import json; from app.main import app; print(json.dumps(app.openapi(), ensure_ascii=False, indent=2))\" > openapi/schema.json && openapi-typescript openapi/schema.json -o src/types/generated/openapi.ts",
-    "check:types": "npm run generate:types && git diff --exit-code -- src/types/generated/openapi.ts openapi/schema.json"
+    "check:types": "tmpdir=$(mktemp -d) && cp openapi/schema.json \"$tmpdir/schema.json\" && cp src/types/generated/openapi.ts \"$tmpdir/openapi.ts\" && npm run generate:types && cmp -s openapi/schema.json \"$tmpdir/schema.json\" && cmp -s src/types/generated/openapi.ts \"$tmpdir/openapi.ts\""
   },
   "dependencies": {
     "axios": "^1.8.4",
@@ -20,8 +20,10 @@
     "vue-router": "^4.5.0"
   },
   "devDependencies": {
-    "openapi-typescript": "^7.10.1",
     "@vitejs/plugin-vue": "^5.2.3",
+    "@vue/test-utils": "^2.4.6",
+    "jsdom": "^29.0.2",
+    "openapi-typescript": "^7.10.1",
     "typescript": "^5.8.3",
     "unplugin-auto-import": "^19.1.2",
     "unplugin-vue-components": "^28.4.1",

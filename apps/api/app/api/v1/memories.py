@@ -3,14 +3,14 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user, get_db
 from app.models.models import Avatar, Memory, User
-from app.schemas.common import MemoryDecisionRequest, MemoryResponse, PaginatedResponse
+from app.schemas.common import MemoryDecisionRequest, MemoryPageResponse, MemoryResponse, MemorySummaryPageResponse, MemorySummaryResponse
 from app.services.audit import AuditService
 from app.services.memories import MemoryService
 
 router = APIRouter()
 
 
-@router.get("", response_model=PaginatedResponse)
+@router.get("", response_model=MemorySummaryPageResponse)
 def list_memories(
     avatar_id: str | None = Query(default=None),
     state: str | None = Query(default=None),
@@ -18,7 +18,7 @@ def list_memories(
     page_size: int = Query(default=20, ge=1, le=100),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> PaginatedResponse:
+) -> MemorySummaryPageResponse:
     query = db.query(Memory).join(Avatar, Avatar.id == Memory.avatar_id).filter(Avatar.user_id == current_user.id)
     if avatar_id:
         query = query.filter(Memory.avatar_id == avatar_id)
@@ -26,8 +26,8 @@ def list_memories(
         query = query.filter(Memory.state == state)
     total = query.count()
     items = query.order_by(Memory.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
-    return PaginatedResponse(
-        items=[MemoryResponse.model_validate(item).model_dump() for item in items],
+    return MemorySummaryPageResponse(
+        items=[MemorySummaryResponse.model_validate(item) for item in items],
         page=page,
         page_size=page_size,
         total=total,

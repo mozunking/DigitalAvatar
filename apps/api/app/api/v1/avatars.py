@@ -51,7 +51,7 @@ def list_avatars(
     )
 
 
-@router.put("/{avatar_id}", response_model=AvatarResponse)
+@router.patch("/{avatar_id}", response_model=AvatarResponse)
 def update_avatar(
     avatar_id: str,
     payload: UpdateAvatarRequest,

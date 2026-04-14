@@ -119,6 +119,9 @@ class Task(Base):
     error_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     trace_id: Mapped[str] = mapped_column(String(64), index=True, default=lambda: uuid4().hex)
     status: Mapped[str] = mapped_column(String(20), default=TaskStatus.PENDING.value, index=True)
+    worker_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    claimed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
@@ -143,6 +146,17 @@ class Memory(Base):
 
     avatar: Mapped[Avatar] = relationship(back_populates="memories")
     task: Mapped[Task | None] = relationship(back_populates="memories")
+
+
+class RevokedToken(Base):
+    __tablename__ = "revoked_tokens"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    token_jti: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    token_type: Mapped[str] = mapped_column(String(20), index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    revoked_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class AuditLog(Base):

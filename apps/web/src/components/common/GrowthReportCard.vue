@@ -107,14 +107,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { MemoryResponse, PersonaResponse, TaskResponse } from '../../types/generated/api'
+import type { MemoryResponse, MemorySummaryResponse, PersonaResponse, TaskResponse } from '../../types/generated/api'
 
 const props = defineProps<{
   avatarName?: string
+  currentAvatarId?: string
   personas: PersonaResponse[]
   tasks: TaskResponse[]
   pendingMemories: MemoryResponse[]
-  confirmedMemories: MemoryResponse[]
+  confirmedMemories: MemorySummaryResponse[]
   loading?: boolean
   failed?: boolean
 }>()
@@ -158,7 +159,7 @@ const latestGrowthAt = computed(() => {
 
 const learnedInsights = computed(() => props.confirmedMemories.slice(0, 3).map((item) => ({
   id: item.id,
-  content: item.content,
+  content: item.excerpt,
   evidence: item.task_id || t('growthReport.directConfirmation'),
   created_at: item.created_at,
 })))
@@ -183,10 +184,10 @@ const improvementItems = computed(() => {
 const nextActions = computed(() => {
   const actions: Array<{ label: string; to: string }> = []
   if (props.pendingMemories.length > 0) {
-    actions.push({ label: t('growthReport.actionReviewPending', { count: props.pendingMemories.length }), to: '/memories' })
+    actions.push({ label: t('growthReport.actionReviewPending', { count: props.pendingMemories.length }), to: '/memories/pending' })
   }
   if (!currentPersona.value) {
-    actions.push({ label: t('growthReport.actionGeneratePersona'), to: '/persona' })
+    actions.push({ label: t('growthReport.actionGeneratePersona'), to: props.currentAvatarId ? `/avatars/${props.currentAvatarId}/persona` : '/persona' })
   }
   if (props.tasks.length === 0) {
     actions.push({ label: t('growthReport.actionRunTask'), to: '/tasks' })

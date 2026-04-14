@@ -47,3 +47,10 @@ def decode_token(token: str) -> dict[str, Any]:
         return jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
     except JWTError as exc:
         raise ValueError("invalid_token") from exc
+
+
+def token_expiry(payload: dict[str, Any]) -> datetime:
+    exp = payload.get("exp")
+    if not exp:
+        raise ValueError("invalid_token")
+    return datetime.fromtimestamp(int(exp), tz=timezone.utc).replace(tzinfo=None)

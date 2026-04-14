@@ -9,6 +9,7 @@
     <aside class="sidebar desktop-sidebar">
       <SidebarContent
         :auth="auth"
+        :current-avatar-id="avatarStore.currentAvatarId"
         @logout="handleLogout"
       />
     </aside>
@@ -17,6 +18,7 @@
     <el-drawer v-model="drawerVisible" direction="ltr" size="260px" :show-close="true" :title="t('app.title')">
       <SidebarContent
         :auth="auth"
+        :current-avatar-id="avatarStore.currentAvatarId"
         @logout="handleLogout"
         @navigate="drawerVisible = false"
       />
@@ -55,12 +57,14 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from './stores/auth'
 import { useLocaleStore } from './stores/locale'
+import { useAvatarStore } from './stores/avatar'
 import api from './api/client'
 import SidebarContent from './components/common/SidebarContent.vue'
 
 const { t } = useI18n()
 const auth = useAuthStore()
 const localeStore = useLocaleStore()
+const avatarStore = useAvatarStore()
 const router = useRouter()
 const providerStatus = ref<'ok' | 'degraded'>('degraded')
 const drawerVisible = ref(false)
@@ -88,8 +92,8 @@ onMounted(async () => {
   }
 })
 
-const handleLogout = () => {
-  auth.logout()
+const handleLogout = async () => {
+  await auth.logout()
   drawerVisible.value = false
   router.push('/login')
 }

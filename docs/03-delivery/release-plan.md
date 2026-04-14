@@ -35,9 +35,9 @@
 - `apps/api/` 最小 API 与 worker 骨架
 - `apps/web/` 最小前端页面与路由骨架
 - `tests/` 主链路测试骨架与执行结果
-- `ops/compose/` Compose 配置
-- `ops/scripts/` 启停、备份、恢复脚本
-- `ops/health/smoke.http` 或等效 smoke 测试文件
+- `deploy/docker/ops/compose/` Compose 配置
+- `deploy/docker/ops/scripts/` 启停、备份、恢复脚本
+- `deploy/docker/ops/health/smoke.http` 或等效 smoke 测试文件
 - 演示 seed 数据
 
 ## 4. 版本冻结点
@@ -90,7 +90,7 @@
 
 | 输入物 | 内容 | 说明 |
 |---|---|---|
-| 演示环境 | Compose 配置、env、脚本 | 可在单机本地启动 |
+| 演示环境 | Compose 配置、env、脚本 | 可在单机本地启动；若受外部 Docker 环境阻塞，至少需具备 `docker compose config` 渲染结果、脚本校验与阻塞证据 |
 | 演示数据 | demo user / avatar / persona / agent / task samples | 仅本地与演示环境可用 |
 | 演示脚本 | 登录、创建 Avatar、生成 Persona、执行 Task、确认 Memory、查看 Audit | 用于稳定复现主链路 |
 | 发布说明 | 版本范围、已知限制、回滚方式 | 面向评审者和演示执行者 |

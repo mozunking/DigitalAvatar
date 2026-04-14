@@ -47,16 +47,21 @@ def create_task(
 @router.get("", response_model=PaginatedResponse)
 def list_tasks(
     avatar_id: str | None = Query(default=None),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> PaginatedResponse:
     query = db.query(Task).join(Avatar, Avatar.id == Task.avatar_id).filter(Avatar.user_id == current_user.id)
     if avatar_id:
         query = query.filter(Task.avatar_id == avatar_id)
-    items = query.order_by(Task.created_at.desc()).all()
+    total = query.count()
+    items = query.order_by(Task.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
     return PaginatedResponse(
         items=[TaskResponse.model_validate(item).model_dump(by_alias=True) for item in items],
-        total=len(items),
+        page=page,
+        page_size=page_size,
+        total=total,
     )
 
 

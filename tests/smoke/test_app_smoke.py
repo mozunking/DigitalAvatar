@@ -23,6 +23,7 @@ def test_smoke_health_and_metrics() -> None:
     assert health.json()['provider']['status'] == 'mock'
     assert health.json()['provider']['version'] == 'mock'
     assert health.json()['provider']['chat_model_available'] is True
+    assert health.json()['provider']['base_url'] == 'http://localhost:11434'
     assert health.json()['provider']['message'] == 'Provider running in mock mode.'
     assert metrics.status_code == 200
     assert metrics.json()['metrics']['version'] == '0.1.0'
@@ -30,4 +31,5 @@ def test_smoke_health_and_metrics() -> None:
     assert metrics.json()['metrics']['provider_status'] == 'mock'
     assert metrics.json()['metrics']['provider_version'] == 'mock'
     assert metrics.json()['metrics']['provider_chat_model_available'] is True
+    assert metrics.json()['metrics']['provider_base_url'] == 'http://localhost:11434'
     assert metrics.json()['metrics']['provider_message'] == 'Provider running in mock mode.'

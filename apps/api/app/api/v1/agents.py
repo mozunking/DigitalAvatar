@@ -66,9 +66,8 @@ def list_agents(
     )
 
 
-@router.get("/{avatar_id}/agents/{agent_id}", response_model=AgentResponse)
+@router.get("/agents/{agent_id}", response_model=AgentResponse)
 def get_agent(
-    avatar_id: str,
     agent_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -82,9 +81,8 @@ def get_agent(
     return AgentResponse.model_validate(agent)
 
 
-@router.patch("/{avatar_id}/agents/{agent_id}", response_model=AgentResponse)
+@router.patch("/agents/{agent_id}", response_model=AgentResponse)
 def update_agent(
-    avatar_id: str,
     agent_id: str,
     payload: UpdateAgentStatusRequest,
     request: Request,
@@ -111,6 +109,6 @@ def update_agent(
         resource_type="agent",
         resource_id=agent.id,
         result=payload.status,
-        request_summary=f"avatar={avatar_id};status={payload.status}",
+        request_summary=f"avatar={agent.avatar_id};status={payload.status}",
     )
     return AgentResponse.model_validate(agent)

@@ -1,11 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { AUTH_STORAGE_KEYS } from '../api/authStorage'
 
 const loginMock = vi.fn()
+const logoutMock = vi.fn()
 
 vi.mock('../api', () => ({
   authApi: {
-    login: loginMock
+    login: loginMock,
+    logout: logoutMock
   }
 }))
 
@@ -29,6 +32,7 @@ describe('auth store', () => {
   beforeEach(() => {
     storage.clear()
     loginMock.mockReset()
+    logoutMock.mockReset()
     setActivePinia(createPinia())
   })
 
@@ -48,24 +52,47 @@ describe('auth store', () => {
     await auth.login('demo@example.com', 'demo123456')
 
     expect(auth.isAuthenticated).toBe(true)
-    expect(localStorage.getItem('digital-avatar-access-token')).toBe('access-token')
-    expect(localStorage.getItem('digital-avatar-refresh-token')).toBe('refresh-token')
+    expect(localStorage.getItem(AUTH_STORAGE_KEYS.accessToken)).toBe('access-token')
+    expect(localStorage.getItem(AUTH_STORAGE_KEYS.refreshToken)).toBe('refresh-token')
   })
 
-  it('clears tokens on logout', async () => {
+  it('revokes refresh token and clears tokens on logout', async () => {
+    logoutMock.mockResolvedValue({})
+
     const { useAuthStore } = await import('./auth')
     const auth = useAuthStore()
 
     auth.accessToken = 'access-token'
     auth.refreshToken = 'refresh-token'
     auth.user = { id: 'u1', email: 'demo@example.com', display_name: 'Demo User' }
-    localStorage.setItem('digital-avatar-access-token', 'access-token')
-    localStorage.setItem('digital-avatar-refresh-token', 'refresh-token')
+    localStorage.setItem(AUTH_STORAGE_KEYS.accessToken, 'access-token')
+    localStorage.setItem(AUTH_STORAGE_KEYS.refreshToken, 'refresh-token')
 
-    auth.logout()
+    await auth.logout()
 
+    expect(logoutMock).toHaveBeenCalledWith('refresh-token')
     expect(auth.isAuthenticated).toBe(false)
-    expect(localStorage.getItem('digital-avatar-access-token')).toBeNull()
-    expect(localStorage.getItem('digital-avatar-refresh-token')).toBeNull()
+    expect(localStorage.getItem(AUTH_STORAGE_KEYS.accessToken)).toBeNull()
+    expect(localStorage.getItem(AUTH_STORAGE_KEYS.refreshToken)).toBeNull()
+  })
+
+  it('clears local session when logout request fails', async () => {
+    logoutMock.mockRejectedValue(new Error('network error'))
+
+    const { useAuthStore } = await import('./auth')
+    const auth = useAuthStore()
+
+    auth.accessToken = 'access-token'
+    auth.refreshToken = 'refresh-token'
+    auth.user = { id: 'u1', email: 'demo@example.com', display_name: 'Demo User' }
+    localStorage.setItem(AUTH_STORAGE_KEYS.accessToken, 'access-token')
+    localStorage.setItem(AUTH_STORAGE_KEYS.refreshToken, 'refresh-token')
+
+    await auth.logout()
+
+    expect(logoutMock).toHaveBeenCalledWith('refresh-token')
+    expect(auth.user).toBeNull()
+    expect(localStorage.getItem(AUTH_STORAGE_KEYS.accessToken)).toBeNull()
+    expect(localStorage.getItem(AUTH_STORAGE_KEYS.refreshToken)).toBeNull()
   })
 })

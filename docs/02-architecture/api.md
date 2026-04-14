@@ -70,9 +70,9 @@
 
 ### Agent
 - `POST /api/v1/avatars/{avatarId}/agents`
-- `GET /api/v1/agents/{agentId}`
+- `GET /api/v1/avatars/agents/{agentId}`
 - `GET /api/v1/avatars/{avatarId}/agents`
-- `PATCH /api/v1/agents/{agentId}`
+- `PATCH /api/v1/avatars/agents/{agentId}`
 
 ### Task
 - `POST /api/v1/tasks`

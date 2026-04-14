@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     database_url: str = Field(default="sqlite:///./data/app.db", alias="DATABASE_URL")
     ollama_base_url: str = Field(default="http://localhost:11434", alias="OLLAMA_BASE_URL")
-    ollama_model: str = Field(default="qwen3.5:7b-instruct-q4_0", alias="OLLAMA_MODEL")
+    ollama_model: str = Field(default="qwen3.5:latest", alias="OLLAMA_MODEL")
     ollama_chat_timeout: int = Field(default=120, alias="OLLAMA_CHAT_TIMEOUT")
     ollama_max_retries: int = Field(default=2, alias="OLLAMA_MAX_RETRIES")
     cors_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]

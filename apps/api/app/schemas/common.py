@@ -139,20 +139,27 @@ class TaskResponse(BaseModel):
     trace_id: str
     result: str | None = None
     error: str | None = None
+    worker_id: str | None = None
+    claimed_at: datetime | None = None
+    started_at: datetime | None = None
     created_at: datetime | None = None
+    completed_at: datetime | None = None
 
     @classmethod
     def model_validate(cls, obj: Any, **kwargs: Any) -> "TaskResponse":
         """Map DB fields to API fields: id->task_id, result_text->result, error_text->error."""
         if hasattr(obj, "id"):
-            # Build a dict with mapped field names
             data = {
                 "task_id": getattr(obj, "id", ""),
                 "status": getattr(obj, "status", ""),
                 "trace_id": getattr(obj, "trace_id", ""),
                 "result": getattr(obj, "result_text", None),
                 "error": getattr(obj, "error_text", None),
+                "worker_id": getattr(obj, "worker_id", None),
+                "claimed_at": getattr(obj, "claimed_at", None),
+                "started_at": getattr(obj, "started_at", None),
                 "created_at": getattr(obj, "created_at", None),
+                "completed_at": getattr(obj, "completed_at", None),
             }
             return cls(**data)
         return super().model_validate(obj, **kwargs)
@@ -160,6 +167,37 @@ class TaskResponse(BaseModel):
 
 class MemoryDecisionRequest(BaseModel):
     reason: str | None = None
+
+
+class MemorySummaryResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    avatar_id: str
+    task_id: str | None
+    type: str
+    sensitivity: str
+    state: str
+    excerpt: str
+    source_type: str | None = None
+    created_at: datetime
+
+    @classmethod
+    def model_validate(cls, obj: Any, **kwargs: Any) -> "MemorySummaryResponse":
+        if hasattr(obj, "content"):
+            data = {
+                "id": getattr(obj, "id", ""),
+                "avatar_id": getattr(obj, "avatar_id", ""),
+                "task_id": getattr(obj, "task_id", None),
+                "type": getattr(obj, "type", ""),
+                "sensitivity": getattr(obj, "sensitivity", ""),
+                "state": getattr(obj, "state", ""),
+                "excerpt": getattr(obj, "content", "")[:120],
+                "source_type": getattr(obj, "source_type", None),
+                "created_at": getattr(obj, "created_at", None),
+            }
+            return cls(**data)
+        return super().model_validate(obj, **kwargs)
 
 
 class MemoryResponse(BaseModel):
@@ -195,6 +233,20 @@ class AuditLogResponse(BaseModel):
 
 class PaginatedResponse(BaseModel):
     items: list[Any]
+    page: int = 1
+    page_size: int = 20
+    total: int = 0
+
+
+class MemorySummaryPageResponse(BaseModel):
+    items: list[MemorySummaryResponse]
+    page: int = 1
+    page_size: int = 20
+    total: int = 0
+
+
+class MemoryPageResponse(BaseModel):
+    items: list[MemoryResponse]
     page: int = 1
     page_size: int = 20
     total: int = 0

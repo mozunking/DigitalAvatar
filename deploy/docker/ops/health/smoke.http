@@ -1,0 +1,12 @@
+### Digital Avatar local Docker smoke
+
+GET http://localhost:8000/health
+Accept: application/json
+
+### Provider health
+GET http://localhost:8000/api/v1/provider/health
+Accept: application/json
+
+### Web entrypoint
+GET http://localhost:4173/
+Accept: text/html
